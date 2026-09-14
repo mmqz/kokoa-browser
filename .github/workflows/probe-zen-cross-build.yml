@@ -189,10 +189,45 @@ jobs:
           echo "=== 全阶段磁盘证据 ==="
           cat /tmp/disk-*.txt || true
 
+      - name: 确认构建产物位置（obj-*/dist/bin）
+        if: ${{ inputs.through == 'build' }}
+        run: |
+          # 上一轮的教训：可执行文件不在仓库根目录，而在 engine/obj-<target>/dist/bin/，
+          # 深度 5。之前用 -maxdepth 3 扫，扫了个空，差点误判成"没编出东西"。
+          echo "=== obj-*/dist/bin（真正的产物在这里）==="
+          ls -la engine/obj-*/dist/bin/ 2>/dev/null | head -60 || echo "(无 dist/bin)"
+          echo "=== exe 清单（不限深度）==="
+          find engine/obj-* -name "*.exe" 2>/dev/null | head -30
+
+      - name: Package（打包成可下载产物）
+        if: ${{ inputs.through == 'build' }}
+        run: |
+          set -x
+          export ZEN_GA_DISABLE_PGO=1
+          export ZEN_RELEASE=1
+          date +%s > /tmp/pkg-start
+          npm run package || echo "!! package 失败 —— 下面仍会列出 dist 以便判断"
+          date +%s > /tmp/pkg-end
+          echo "打包耗时秒数: $(( $(cat /tmp/pkg-end) - $(cat /tmp/pkg-start) ))"
+          echo "=== dist 内容 ==="; ls -la dist 2>/dev/null || echo "(无 dist)"
+
+      - name: 上传产物
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kokoa-win64-build
+          path: |
+            dist/*
+            engine/obj-*/dist/bin/*.exe
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: 产物清点
         if: always()
         run: |
           echo "=== 顶层 ==="; ls -la
           echo "=== engine/obj-* ==="; du -sh engine/obj-* 2>/dev/null || echo "(无 obj 目录)"
           echo "=== dist ==="; ls -la dist 2>/dev/null || echo "(无 dist)"
-          find . -maxdepth 3 \( -name "*.exe" -o -name "zen.exe" -o -name "kokoa*.exe" \) 2>/dev/null | head -20 || true
+          echo "=== obj-*/dist/bin（前 40 项）==="; ls -la engine/obj-*/dist/bin/ 2>/dev/null | head -40 || echo "(无)"
+          echo "=== 全部 exe（不限深度）==="
+          find . -name "*.exe" -not -path "*/node_modules/*" -not -path "*/win-cross/*" 2>/dev/null | head -30 || true
