@@ -1,0 +1,196 @@
+name: probe-zen-cross-build
+
+# 目的：只用它回答三个问题，不做产品构建。
+#   a) 14 GB SSD + free-disk-space 能否越过 Firefox 构建的 40 GB 门槛
+#   b) 4 vCPU 能否在 6 小时作业上限内编完（Zen 的 CI 用 8 vCPU）
+#   c) Zen 的 Linux→Windows 交叉编译链能否在我们自己的 workflow 里复现
+#
+# 本文件照抄 zen-browser/desktop 的 .github/workflows/windows-release-build.yml
+# 的【步骤内容】，但替换了 runner（blacksmith-* -> ubuntu-latest）与第三方 action，
+# 并剥掉 PGO / 签名 / 打包 / LTO —— 那些对可行性判断没有意义，只会吃掉时间与磁盘。
+#
+# 【任务 1 之后】checkout 的是【本仓库】（tomjiu/kokoa-browser = Zen 源码树 + 我们的 .github/），
+# 不再拉 zen-browser/desktop。engine/ 仍由 surfer download 从 Mozilla 源码包生成。
+
+on:
+  workflow_dispatch:
+    inputs:
+      through:
+        description: "跑到哪一步就停（用于分段探明磁盘与耗时）"
+        required: true
+        type: choice
+        default: "build"
+        options:
+          - bootstrap    # 只到交叉工具链就绪
+          - build        # 一路编完
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355   # 官方硬上限 360，留 5 分钟余量
+    env:
+      SURFER_PLATFORM: win32
+      ZEN_CROSS_COMPILING: "1"
+      SURFER_COMPAT: x86_64
+      CARGO_INCREMENTAL: "0"
+
+    steps:
+      - name: 磁盘 · 起点
+        run: df -h / | tee /tmp/disk-00.txt
+
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+
+      - name: 磁盘 · 清理后
+        if: always()
+        run: df -h / | tee /tmp/disk-01.txt
+
+      - name: Checkout 本仓库（Kokoa 分支 = Zen 源码树）
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Git 身份
+        # 【关键】surfer download → init 会对 engine/ 执行 git init + commit。
+        # 标准 ubuntu-latest runner 没有预置 git 身份（Blacksmith 有），
+        # commit 会失败并留下零提交仓库，随后 mach bootstrap 读 git log -1 就崩。
+        # 官方 CI 的 Setup Git 在 Download 之前 —— 必须同序，不能挪到 Import 之后。
+        run: |
+          git config --global user.email "ci@kokoa-browser.local"
+          git config --global user.name "kokoa-browser CI"
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: npm ci
+        run: npm ci
+
+      - name: surfer ci
+        run: npm run surfer -- ci --brand twilight --display-version probe
+
+      - name: 磁盘 · surfer ci 后
+        if: always()
+        run: df -h / | tee /tmp/disk-02.txt
+
+      - name: Download Firefox
+        run: npm run download
+
+      - name: 校验 engine/ 已有提交
+        run: |
+          echo "=== 校验 engine/ 是否已有提交（必须非空，否则 bootstrap 必崩）==="
+          git -C engine log --oneline -1
+          git -C engine status -sb
+
+      - name: 磁盘 · 源码下载后
+        if: always()
+        run: df -h / | tee /tmp/disk-03.txt
+
+      - name: Setup for Windows（Ubuntu 依赖 + Wine + VS 工具链）
+        run: |
+          set -x
+          mkdir -p ~/win-cross
+          cd engine/
+          sudo apt-get install -y python3-launchpadlib
+          sudo add-apt-repository -y ppa:savoury1/backports
+          sudo apt-get update
+          sudo apt-get install -y python3-pip autoconf autoconf2.13 automake bison \
+            build-essential cabextract curl cmake flex gawk gcc-multilib git gnupg jq \
+            libbz2-dev libexpat1-dev libffi-dev libncursesw5-dev libsqlite3-dev libssl-dev \
+            libtool libucl-dev libxml2-dev msitools ninja-build openssh-client p7zip-full \
+            pkg-config procps python3-requests python3-toml scons subversion tar unzip \
+            uuid uuid-dev wget zip zlib1g-dev aria2
+          echo "=== Setup wine ==="
+          aria2c "https://firefox-ci-tc.services.mozilla.com/api/index/v1/task/gecko.cache.level-3.toolchains.v3.linux64-wine.latest/artifacts/public/build/wine.tar.zst" -o wine.tar.zst
+          tar --zstd -xf wine.tar.zst -C ~/win-cross
+          rm wine.tar.zst
+          echo "=== Setup Visual Studio ==="
+          ./mach python --virtualenv build taskcluster/scripts/misc/get_vs.py build/vs/vs2026.yaml ~/win-cross/vs2026
+
+      - name: 磁盘 · 交叉工具链后
+        if: always()
+        run: df -h / | tee /tmp/disk-04.txt
+
+      - name: Import
+        run: |
+          . "$HOME/.cargo/env" || true
+          npm run import -- --verbose
+
+      - name: Bootstrap
+        run: |
+          set -x
+          cd engine/
+          chmod -R +x "$(echo ~)/win-cross/vs2026" || true
+          cd ..
+          npm run bootstrap
+          cd engine/
+          ls ~/.mozbuild/clang/lib/clang/
+          echo "export LIB=\"$(cd ~/.mozbuild/clang/lib/clang/* && cd lib/windows && pwd)\"" >> ../configs/common/mozconfig
+          cat ../configs/common/mozconfig
+          sudo apt-get install -y dos2unix
+          ls ~/win-cross/wine || true
+          ls ~/win-cross/vs2026 || true
+
+      - name: 磁盘 · bootstrap 后
+        if: always()
+        run: df -h / | tee /tmp/disk-05.txt
+
+      - name: Setup Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain $(cat .rust-toolchain)
+          source $HOME/.cargo/env
+          rustup target add x86_64-pc-windows-msvc
+          WINDOWS_RS_VERSION=$(cat build/windows/.windows-rs-version)
+          curl -fsSL "https://static.crates.io/crates/cargo-download/cargo-download-0.1.2.crate" | tar xz -C /tmp
+          (cd /tmp/cargo-download-0.1.2 && cargo generate-lockfile && cargo update tinyvec --precise 1.12.0)
+          RUSTFLAGS="--cap-lints=allow" cargo install --path /tmp/cargo-download-0.1.2 --locked
+          cd engine/
+          cargo download -x windows=$WINDOWS_RS_VERSION
+          echo "" >> ../configs/common/mozconfig
+          echo "export MOZ_WINDOWS_RS_DIR=$(pwd)/windows-$WINDOWS_RS_VERSION" >> ../configs/common/mozconfig
+
+      - name: Surface（到这里就停）
+        if: ${{ inputs.through == 'bootstrap' }}
+        run: |
+          echo "=== 已按要求停在 bootstrap。以下为磁盘证据 ==="
+          cat /tmp/disk-*.txt
+          df -h /
+
+      - name: 确认 mozconfig（PGO 由 ZEN_GA_DISABLE_PGO 关掉）
+        if: ${{ inputs.through == 'build' }}
+        run: cat configs/windows/mozconfig
+
+      - name: Build
+        if: ${{ inputs.through == 'build' }}
+        run: |
+          set -x
+          dos2unix configs/windows/mozconfig
+          export ZEN_GA_DISABLE_PGO=1
+          export ZEN_RELEASE=1
+          bash ./scripts/mar_sign.sh -i || echo "!! mar_sign.sh 失败，继续"
+          ulimit -n 4096
+          date +%s > /tmp/build-start
+          npm run build
+          date +%s > /tmp/build-end
+          echo "构建耗时秒数: $(( $(cat /tmp/build-end) - $(cat /tmp/build-start) ))"
+
+      - name: 磁盘 · 构建后
+        if: always()
+        run: |
+          df -h / | tee /tmp/disk-06.txt
+          echo "=== 全阶段磁盘证据 ==="
+          cat /tmp/disk-*.txt || true
+
+      - name: 产物清点
+        if: always()
+        run: |
+          echo "=== 顶层 ==="; ls -la
+          echo "=== engine/obj-* ==="; du -sh engine/obj-* 2>/dev/null || echo "(无 obj 目录)"
+          echo "=== dist ==="; ls -la dist 2>/dev/null || echo "(无 dist)"
+          find . -maxdepth 3 \( -name "*.exe" -o -name "zen.exe" -o -name "kokoa*.exe" \) 2>/dev/null | head -20 || true
