@@ -1,15 +1,19 @@
 name: probe-zen-cross-build
 
-# 目的：只用它回答三个问题，不做产品构建。
-#   a) 14 GB SSD + free-disk-space 能否越过 Firefox 构建的 40 GB 门槛
-#   b) 4 vCPU 能否在 6 小时作业上限内编完（Zen 的 CI 用 8 vCPU）
-#   c) Zen 的 Linux→Windows 交叉编译链能否在我们自己的 workflow 里复现
+# 构建【我们自己的】Kokoa 分支（= Zen 源码树 + 我们的改动）。
+#
+# 可行性结论（2026-09-15 实测）：
+#   a) 磁盘【不是瓶颈】：标准 runner 实际是 145 GB 的盘（GitHub 官方文档写的 14 GB 不符），
+#      装完全部依赖、再编完，仍剩 88 GB。
+#   b) 时间【在上限内】：4 vCPU 下编译耗时 9690 秒（2 小时 41 分 30 秒），
+#      作业总耗时 2 小时 53 分，在 GitHub 的 6 小时作业上限内。
+#   c) 交叉链【可复现】：Ubuntu 依赖 + Wine + VS 工具链 + 256 个源码补丁全部成功。
 #
 # 本文件照抄 zen-browser/desktop 的 .github/workflows/windows-release-build.yml
-# 的【步骤内容】，但替换了 runner（blacksmith-* -> ubuntu-latest）与第三方 action，
-# 并剥掉 PGO / 签名 / 打包 / LTO —— 那些对可行性判断没有意义，只会吃掉时间与磁盘。
+# 的【步骤内容】，替换了 runner（blacksmith-* -> ubuntu-latest）与第三方 action，
+# 去掉 PGO / 签名 / LTO（对可行性判断无意义，只吃时间与磁盘）。
 #
-# 【任务 1 之后】checkout 的是【本仓库】（tomjiu/kokoa-browser = Zen 源码树 + 我们的 .github/），
+# 【任务 1 之后】checkout 的是【本仓库】（tomjiu/kokoa-browser = Zen 源码树 + 我们的改动），
 # 不再拉 zen-browser/desktop。engine/ 仍由 surfer download 从 Mozilla 源码包生成。
 
 on:
