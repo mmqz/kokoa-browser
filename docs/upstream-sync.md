@@ -98,28 +98,66 @@ git push --force origin main
 
 ---
 
-## 五、想在本地先看冲突（推荐）
+## 五、本仓库【不保存】Zen 的历史（2026-09-15 的决定）
 
-本地**保留着 Zen 的完整历史**（约 5.8 GB，在 `E:\Code\ai\kokoa-browser\.git`），
-所以可以在推送前做一次真实的合并来预演冲突：
+早先本地曾抓过 Zen 的完整历史（`.git` 一度涨到 **5,818 MB**，而我们的源码工作树只有 **39 MB**），
+用来做了一次真实合并以验证 delta 干净。**现已删除。**
+
+**理由**：我们**用不上**。要看上游，GitHub 上随时能看
+（https://github.com/zen-browser/desktop）；真要合并时再按需抓即可。
+
+**删除前的记录**（删掉就查不到了，故存于此）：
 
 ```
-git fetch upstream dev
-git checkout -b merge-preview main
-git merge --allow-unrelated-histories upstream/dev
-# 看冲突 → 解决 → 记录结论
-git checkout main && git branch -D merge-preview
+上游当时 HEAD   upstream/dev = 644bf48b6cc4e41f62f39adecd877b0d248e9cab
+  其最近 3 个提交（即我们基线 4980f3ce1 之后的全部）：
+    644bf48b6  gh-13196: Fixed sidebar not hiding if the urlbar is open (gh-15403)
+    d2acc61a8  gh-15402: Add archived:false to github live folder queries (gh-14854)
+    f84278317  gh-15400: Fixed duplicate "paste and go" items (gh-15401)
+我们的基线             4980f3ce18bfc5904f5c884f122062e9b3960f96
 ```
 
-**注意：这样合出来的提交【推不上去】**（就是第一节那个 5.62 GiB）。
-它只用来**看冲突**，看完就扔。真正的同步还是走第四节。
+**那次合并的结论（重要 —— 这是 delta 干净的唯一证明）**：
 
-> 已存一例：分支 `lab/upstream-merged`（合并了 `upstream/dev@644bf48b6`，0 冲突）。
-> 它**只在本地**，没有也不该推到远端。
+15 个文件 delta，**双方都改的文件 = 0 个**。我们会改的与上游会改的**完全不重叠**：
+10 个只有我们改（取 ours）、9 个只有 Zen 改（取 theirs），**无一处需要人工判断**。
+
+**推论**：上游那 3 个提交改的 9 个文件
+（`ZenUIManager.mjs`、`styles/zen-browser-{container,ui,theme}.css`、`ZenCompactMode.mjs`、
+`ZenDragAndDrop.js`、`GithubLiveFolder.sys.mjs`、`vertical-tabs.css`、
+`tests/live-folders/browser_github_live_folder.js`）
+**目前还没进我们的树** —— 等下次同步会一并带进来。
+
+> `.git` 里保留 `upstream` 这个 remote **配置**（几行 URL，不占空间）。
+> 需要时 `git fetch upstream dev` 即可，用完再删。
 
 ---
 
-## 六、判断同步是否成功
+## 六、想在本地先看冲突（可选）
+
+本地**默认不保留**上游历史（第五节）。要预演冲突就**临时抓一份、用完删掉**：
+
+```
+git fetch upstream dev                    # 约 5.6 GB，几分钟
+git checkout -b merge-preview main
+git merge --allow-unrelated-histories upstream/dev
+# 看冲突 → 记录结论（冲突只会出现在第二节那 15 个文件里）
+git checkout main && git branch -D merge-preview
+git update-ref -d refs/remotes/upstream/dev
+git reflog expire --expire=now --all && git gc --prune=now
+```
+
+**注意两点**：
+1. 这样合出来的提交【**推不上去**】（就是第一节那个 5.62 GiB），只用来**看冲突**。
+2. 看完**务必删干净**（最后两行），否则 `.git` 会一直停在 5.8 GB。
+
+> **一次性收益**：这个预演**做过一次**（`upstream/dev@644bf48b6`，0 冲突，
+> 结论见第五节）。所以**不是每次同步都要做** —— 只有当你怀疑 delta 与上游撞车时才值得，
+> 平时直接走第四节的 cherry-pick 就够，冲突会在 cherry-pick 时自然暴露。
+
+---
+
+## 七、判断同步是否成功
 
 ```
 git log --oneline -1                    # 应是我们的最新提交
