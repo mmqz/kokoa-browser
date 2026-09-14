@@ -1,8 +1,8 @@
 {
-  "name": "Zen Browser",
-  "vendor": "Zen OSS Team",
-  "appId": "zen",
-  "binaryName": "zen",
+  "name": "Kokoa Browser",
+  "vendor": "Kokoa",
+  "appId": "kokoa",
+  "binaryName": "kokoa",
   "version": {
     "product": "firefox",
     "version": "155.0.1",
@@ -15,14 +15,14 @@
   "addons": {},
   "brands": {
     "release": {
-      "backgroundColor": "#282A33",
-      "brandShorterName": "Zen",
-      "brandShortName": "Zen",
-      "brandFullName": "Zen Browser",
+      "backgroundColor": "#1A1B26",
+      "brandShorterName": "Kokoa",
+      "brandShortName": "Kokoa",
+      "brandFullName": "Kokoa Browser",
       "release": {
-        "displayVersion": "1.22.1b",
+        "displayVersion": "0.1.0a",
         "github": {
-          "repo": "zen-browser/desktop"
+          "repo": "tomjiu/kokoa-browser"
         },
         "archives": {
           "windows": "windows.mar",
@@ -35,14 +35,14 @@
       }
     },
     "twilight": {
-      "backgroundColor": "#282A33",
-      "brandShorterName": "Zen",
-      "brandShortName": "Twilight",
-      "brandFullName": "Zen Twilight",
+      "backgroundColor": "#1A1B26",
+      "brandShorterName": "Kokoa",
+      "brandShortName": "Kokoa Twilight",
+      "brandFullName": "Kokoa Browser Twilight",
       "release": {
-        "displayVersion": "1.23t",
+        "displayVersion": "0.1.0t",
         "github": {
-          "repo": "zen-browser/desktop"
+          "repo": "tomjiu/kokoa-browser"
         }
       }
     }
@@ -53,5 +53,5 @@
     ],
     "licenseType": "MPL-2.0"
   },
-  "updateHostname": "updates.zen-browser.app"
+  "updateHostname": "updates.kokoa.local"
 }
