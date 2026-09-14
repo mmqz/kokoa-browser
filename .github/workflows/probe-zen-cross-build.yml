@@ -73,7 +73,9 @@ jobs:
         run: npm ci
 
       - name: surfer ci
-        run: npm run surfer -- ci --brand twilight --display-version probe
+        # display-version 必须是「数字.数字...」—— newtab/moz.build 会 int(split('.')[0])，
+        # 用 probe 这类字符串会在 Build 的 configure 阶段直接 ValueError。
+        run: npm run surfer -- ci --brand twilight --display-version 0.1.0t
 
       - name: 磁盘 · surfer ci 后
         if: always()
