@@ -86,6 +86,11 @@
   }
 }
 
+/* Kokoa: AI workspace launcher — reuse sparkles until we ship a custom asset */
+#kokoa-open-ai-workspace-button {
+  list-style-image: url("sparkles.svg") !important;
+}
+
 #downloads-button,
 #downloads-indicator-anchor,
 #appMenu-downloads-button,

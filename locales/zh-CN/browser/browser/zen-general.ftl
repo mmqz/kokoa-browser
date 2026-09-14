@@ -63,6 +63,11 @@ zen-toggle-compact-mode-button =
     .label = 简洁模式
     .tooltiptext = 切换简洁模式
 
+## Kokoa
+kokoa-open-ai-workspace-button =
+    .label = AI 工作区
+    .tooltiptext = 打开 Kokoa AI 工作区
+
 # note: Do not translate the "<br/>" tags in the following string
 
 zen-learn-more-text = 了解更多

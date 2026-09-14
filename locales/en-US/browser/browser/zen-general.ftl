@@ -74,6 +74,11 @@ zen-toggle-compact-mode-button =
     .label = Compact Mode
     .tooltiptext = Toggle Compact Mode
 
+## Kokoa
+kokoa-open-ai-workspace-button =
+    .label = AI Workspace
+    .tooltiptext = Open Kokoa AI Workspace
+
 # note: Do not translate the "<br/>" tags in the following string
 
 zen-learn-more-text = Learn More

@@ -166,6 +166,18 @@ document.addEventListener(
             }
             break;
           }
+          case "cmd_kokoaOpenAiWorkspace": {
+            // Kokoa first-owned UI: open the local AI workspace as a tab.
+            // URL is a constant on purpose — no config system yet.
+            gBrowser.selectedTab = gBrowser.addTab(
+              "http://127.0.0.1:3080/",
+              {
+                triggeringPrincipal:
+                  Services.scriptSecurityManager.getSystemPrincipal(),
+              }
+            );
+            break;
+          }
           default:
             gZenGlanceManager.handleMainCommandSet(event);
             if (event.target.id.startsWith("cmd_zenWorkspaceSwitch")) {
