@@ -57,9 +57,19 @@ git remote add upstream https://github.com/zen-browser/desktop.git
 git fetch upstream dev
 ```
 
-> ⚠️ **坑**：加了 `upstream` 之后，在这个目录里跑 `gh` 会认错仓库
+> ⚠️ **坑 1**：加了 `upstream` 之后，在这个目录里跑 `gh` 会认错仓库
 > （它按 remote 解析，会认成 zen-browser/desktop）。
 > **一律显式加 `--repo tomjiu/kokoa-browser`。**
+>
+> ⚠️ **坑 2 —— 基线 tag 绝对不要 push。**
+> 基线 tag 指向的是 **Zen 的提交**，推送它等于要求远端拥有 Zen 的历史，
+> 于是又变成第一节那个 5.62 GiB 的推送，**必然失败**（实测报 `RPC failed; HTTP 500`）。
+> 基线 tag 是**纯本地工具**，只用来算 delta。
+>
+> ```
+> git push origin main          # ✅ 只推分支
+> git push --tags               # ❌ 会带上指向 Zen 历史的 tag，必挂
+> ```
 
 ---
 
