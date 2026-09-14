@@ -48,6 +48,7 @@ jobs:
           tool-cache: false
 
       - name: 磁盘 · 清理后
+        if: always()
         run: df -h / | tee /tmp/disk-01.txt
 
       - name: Checkout Zen
@@ -69,12 +70,14 @@ jobs:
         run: npm run surfer -- ci --brand twilight --display-version probe
 
       - name: 磁盘 · surfer ci 后
+        if: always()
         run: df -h / | tee /tmp/disk-02.txt
 
       - name: Download Firefox
         run: npm run download
 
       - name: 磁盘 · 源码下载后
+        if: always()
         run: df -h / | tee /tmp/disk-03.txt
 
       - name: Setup for Windows（Ubuntu 依赖 + Wine + VS 工具链）
@@ -99,12 +102,22 @@ jobs:
           ./mach python --virtualenv build taskcluster/scripts/misc/get_vs.py build/vs/vs2026.yaml ~/win-cross/vs2026
 
       - name: 磁盘 · 交叉工具链后
+        if: always()
         run: df -h / | tee /tmp/disk-04.txt
 
       - name: Import
         run: |
+          # 【关键修】engine/ 是 surfer import 新建的 git 仓库，它会尝试提交，
+          # 但 runner 上没有 git 身份时提交失败（Author identity unknown），
+          # 留下一个【零提交】的仓库 —— mach bootstrap 随后读 git log -1 就崩，
+          # 报 "your current branch 'zen_browser' does not have any commits yet"。
+          # 这不是 Zen 的问题，是标准 runner 不像 Blacksmith 那样预置了 git 身份。
+          git config --global user.email "ci@kokoa-browser.local"
+          git config --global user.name "kokoa-browser CI"
           . "$HOME/.cargo/env" || true
           npm run import -- --verbose
+          echo "=== 校验 engine/ 是否已有提交（必须非空，否则 bootstrap 必崩）==="
+          git -C engine log --oneline -1
 
       - name: Bootstrap
         run: |
@@ -122,6 +135,7 @@ jobs:
           ls ~/win-cross/vs2026 || true
 
       - name: 磁盘 · bootstrap 后
+        if: always()
         run: df -h / | tee /tmp/disk-05.txt
 
       - name: Setup Rust
