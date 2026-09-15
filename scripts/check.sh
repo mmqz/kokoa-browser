@@ -256,6 +256,35 @@ check_patches() {
   if [ $bad -eq 0 ]; then ok "$n 个 patch 文件 hunk 行数全部自洽"; fi
 }
 
+# ── 7. mozconfig 里的非法变量 ──────────────────────────────────────────
+#   背景：2026-09-15 一次构建在 Build 步失败（11m52s），报：
+#     mozbuild.configure.options.InvalidOptionError:
+#     MOZ_APP_VENDOR=Kokoa can not be set by mozconfig.
+#     Values are accepted from: implied, environment, ...
+#   MOZ_APP_VENDOR 是 toolkit/moz.configure 里的 project_flag，
+#   【不接受 mozconfig 的 export】。正确做法是给它的 project_flag 加 default（走 patch）。
+#   这个错误【本该秒级发现】——不用浪费一次 3 小时构建。
+check_mozconfig() {
+  say "=== mozconfig 非法变量 ==="
+  local bad=0 f
+  # 这些变量是 project_flag，不能由 mozconfig 的 export 设
+  local forbidden="MOZ_APP_VENDOR MOZ_APP_ID MOZ_APP_UA_NAME MOZ_APP_PROFILE"
+  for f in configs/*/mozconfig; do
+    [ -f "$f" ] || continue
+    for v in $forbidden; do
+      # 去掉注释行后再找 export
+      if grep -E "^[[:space:]]*export[[:space:]]+$v=" "$f" >/dev/null 2>&1; then
+        bad
+        bad=$((bad+1))
+        local ln
+        ln=$(grep -nE "^[[:space:]]*export[[:space:]]+$v=" "$f" | head -1 | cut -d: -f1)
+        printf "  %s:%s 不能 export %s（project_flag，mach 会直接报错）\n" "$f" "$ln" "$v"
+      fi
+    done
+  done
+  if [ $bad -eq 0 ]; then ok "mozconfig 里没有非法的 project_flag export"; fi
+}
+
 case "$MODE" in
   syntax) check_syntax ;;
   json)   check_json ;;
@@ -263,7 +292,8 @@ case "$MODE" in
   l10n)   check_l10n ;;
   brands) check_brands ;;
   patches) check_patches ;;
-  all)    check_syntax; check_json; check_prefs; check_l10n; check_brands; check_patches ;;
+  mozconfig) check_mozconfig ;;
+  all)    check_syntax; check_json; check_prefs; check_l10n; check_brands; check_patches; check_mozconfig ;;
   *)      say "用法: bash scripts/check.sh [syntax|json|prefs|l10n|brands|all]"; exit 2 ;;
 esac
 

@@ -10,7 +10,14 @@ ac_add_options --with-app-basename=Kokoa
 ac_add_options --with-l10n-base="${topsrcdir}/browser/locales"
 
 export MOZ_APP_BASENAME=Kokoa
-export MOZ_APP_VENDOR=Kokoa
+# 【不要在这里设 MOZ_APP_VENDOR】—— 2026-09-15 实测：
+#   export MOZ_APP_VENDOR=Kokoa
+# 会让 mach 直接报错退出：
+#   mozbuild.configure.options.InvalidOptionError:
+#   MOZ_APP_VENDOR=Kokoa can not be set by mozconfig.
+#   Values are accepted from: implied, environment, ...
+# 它是 toolkit/moz.configure 里的 project_flag，【不接受 mozconfig 的 export】。
+# 正确做法已经做了：src/toolkit/moz-configure.patch 给它加了 default="Kokoa"。
 export MOZ_BRANDING_DIRECTORY=${brandingDir}
 export MOZ_OFFICIAL_BRANDING_DIRECTORY=${brandingDir}
 
