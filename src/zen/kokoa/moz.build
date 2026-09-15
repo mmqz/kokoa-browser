@@ -1,0 +1,20 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Kokoa 自己的模块。
+#
+# 【为什么用 EXTRA_JS_MODULES.zen】
+# 这会把模块注册到 resource:///modules/zen/<名字>，
+# 然后用 ChromeUtils.importESModule 导入 —— Zen 的惯例。
+# 参照 src/zen/spaces/moz.build（ZenSpaceManager.mjs 等就是这样注册的）。
+#
+# 【为什么不用 jar.inc.mn 的 chrome://】
+# 那样也能工作，但：
+#   · Zen 的「逻辑模块」都在 modules/zen/ 下（EXTRA_JS_MODULES.zen）
+#   · 而 jar.inc.mn 那条路主要用于 UI 脚本（ZenStartup / ZenMenubar 等）
+#   · 我们这个是纯逻辑（拿 URL / 找标签），放 modules 更合适
+
+EXTRA_JS_MODULES.zen += [
+    "KokoaAiPanel.mjs",
+]
