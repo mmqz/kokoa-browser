@@ -253,6 +253,21 @@ document.addEventListener(
             gBrowser.selectedTab = gBrowser.addTab(url, {
               triggeringPrincipal:
                 Services.scriptSecurityManager.getSystemPrincipal(),
+              // 【2026-09-15 加】不让 space-routing 动这个标签。
+              //
+              // 背景：ZenSpaceRoutingManager.sys.mjs L216 会在 addTab 时按 URL 匹配
+              // 用户配置的路由规则，把标签【挪到别的 space】：
+              //     if (options.skipRoute || options.pinned || options.tabGroup) {
+              //       return;   // 不路由
+              //     }
+              //
+              // 如果用户建了 127.0.0.1 / kokoa.local 之类的规则，
+              // 我们的 AI 工作区标签会被挪走 —— 那不是用户想要的。
+              // AI 工作区【属于当前 space】，不该被 URL 规则重定向。
+              //
+              // skipRoute 是 Zen 官方支持的用法（glance / share / split-view / sync 都在用），
+              // 而且有专门的测试：src/zen/tests/space_routing/browser_space_routing_on_add_tab.js
+              skipRoute: true,
             });
             break;
           }
