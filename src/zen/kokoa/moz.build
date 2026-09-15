@@ -13,8 +13,9 @@
 # 那样也能工作，但：
 #   · Zen 的「逻辑模块」都在 modules/zen/ 下（EXTRA_JS_MODULES.zen）
 #   · 而 jar.inc.mn 那条路主要用于 UI 脚本（ZenStartup / ZenMenubar 等）
-#   · 我们这个是纯逻辑（拿 URL / 找标签），放 modules 更合适
+#   · 我们这两个是纯逻辑（拿 URL / 找标签 / 拉起 dsh），放 modules 更合适
 
 EXTRA_JS_MODULES.zen += [
     "KokoaAiPanel.mjs",
+    "KokoaDshSidecar.mjs",
 ]

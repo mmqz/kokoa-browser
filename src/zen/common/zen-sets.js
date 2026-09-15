@@ -167,45 +167,68 @@ document.addEventListener(
             break;
           }
           case "cmd_kokoaOpenAiWorkspace": {
-            // Kokoa AI 工作区：打开本地 dsh 面板。
+            // Kokoa AI 工作区：确保 dsh 在跑 -> 打开带 token 的面板。
             //
-            // 【2026-09-15 重构】原来这里内联了约 100 行（三级回退拿 URL + addTab）；
-            // 现在抽到 src/zen/kokoa/KokoaAiPanel.mjs，原因：
-            //   · 那个模块是【移植主线旧外壳】的成果，逻辑与主线一一对应
-            //   · 内联写在这里没法复用（分屏 / 侧栏 / 设置页都要用）
-            //   · 也已经没法测试
+            // 【2026-09-15 移植】逻辑来自主线旧外壳 boot.js（3036 行）：
+            //   startSidecar L504 / stopSidecar L627 / ensure 语义
+            //   模块：src/zen/kokoa/KokoaDshSidecar.mjs
             //
-            // 本次重构【顺带修了一个体验问题】：
-            //   原来每次都 addTab —— 点几次就开出几个重复的 AI 标签。
-            //   现在先 findAiTab 复用（移植主线 boot.js L1047 的直接收益）。
+            // 【这一步解决什么】用户之前看到的：
+            //   "dsh web authentication required; reopen the URL printed by dsh web."
+            // 原因是 dsh 没在跑，我们却直接开了一个连不上的 URL。
+            // 现在会先拉起 dsh（dsh web --no-open），从它的 stdout 拿到
+            // 带 token 的 URL，再打开 —— 见 KokoaDshSidecar.mjs 的详细说明。
+            //
             // 路径说明：src/zen/kokoa/moz.build 的 EXTRA_JS_MODULES.zen
-            // 把模块注册到 resource:///modules/zen/<名字> —— Zen 的惯例。
+            // 把模块注册到 resource:///modules/zen/<名字>（Zen 的惯例）。
             const { openAiTab, hasToken } = ChromeUtils.importESModule(
               "resource:///modules/zen/KokoaAiPanel.mjs"
             );
-
-            const { tab, reused, url, source } = openAiTab(window);
-
-            console.info(
-              "[Kokoa] AI workspace " +
-                (reused ? "reused" : "opened") +
-                ": " + source + " -> " + url
+            const { ensureDshUrl } = ChromeUtils.importESModule(
+              "resource:///modules/zen/KokoaDshSidecar.mjs"
             );
 
-            if (reused) {
-              break;
-            }
+            // 【为什么用 async IIFE】
+            //   · 拉起 dsh 是异步的（spawn + 等它打印 URL，可能几秒）
+            //   · 而 addEventListener 的 command 回调不是 async 上下文，
+            //     直接写 await 会让整个 handler 变成 Promise —— 之后
+            //     其它 case 的逻辑会被跳过（那是隐性 bug）。
+            //   · 用 IIFE 把它包住，主流程立刻返回。
+            (async () => {
+              // ① 先看有没有已经打开的 AI 标签 —— 有就直接切过去，不重复拉起
+              const existing = openAiTab(window);
+              if (existing.reused) {
+                console.info("[Kokoa] AI workspace reused");
+                return;
+              }
 
-            // 没有 token 时给出可操作的提示，而不是让 dsh 报一句看不懂的错
-            if (!hasToken(url)) {
-              console.warn(
-                "[Kokoa] AI workspace URL has no token. dsh will show " +
-                  "\u0027web authentication required\u0027. Set KOKOA_DSH_URL " +
-                  "env var (the dsh CLI prints the full URL with token) or write " +
-                  "it to <KOKOA_STATE_DIR>/gecko-shell/kokoa-panel.url"
+              // ② 确保 dsh 在跑（若没跑会拉起，等它给出带 token 的 URL）
+              const { url, error, reused } = await ensureDshUrl();
+              if (error) {
+                console.warn("[Kokoa] " + error);
+                // 拉起失败时，退回用配置里的 URL 打开（可能是用户在别处起的 dsh）
+                const fallback = openAiTab(window);
+                if (!hasToken(fallback.url)) {
+                  console.warn(
+                    "[Kokoa] 面板 URL 没有 token，dsh 会显示 " +
+                      "\u0027web authentication required\u0027。" +
+                      "请手动执行 dsh web，或设置 KOKOA_DSH_URL。"
+                  );
+                }
+                return;
+              }
+
+              console.info(
+                "[Kokoa] dsh " + (reused ? "已复用" : "已拉起") +
+                  "，打开面板（token 已隐藏）"
               );
-            }
-            void tab;
+
+              // ③ 用带 token 的 URL 打开（覆盖掉 ① 里可能已开的无 token 标签）
+              const { tab } = openAiTab(window);
+              void tab;
+            })().catch(e => {
+              console.error("[Kokoa] 打开 AI 工作区失败: " + e);
+            });
             break;
           }
           default:
