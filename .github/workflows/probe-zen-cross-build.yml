@@ -41,42 +41,38 @@ jobs:
       SURFER_COMPAT: x86_64
       CARGO_INCREMENTAL: "0"
 
-      # 【2026-09-15 ★ 已查清根因，这是我之前查不明白的地方】
+      # 【2026-09-15 ★ 更正：不要在这里设 MOZ_APP_PROFILE / MOZ_APP_VENDOR】
       #
-      # 目标：让 application.ini 的 Vendor / Profile 变成 Kokoa。
+      # 我一度在这里设了 MOZ_APP_PROFILE: kokoa，导致【两次构建失败】：
+      #   InvalidOptionError: MOZ_APP_PROFILE=kokoa can not be set by environment.
+      #   Values are accepted from: implied
       #
       # ── 根因（决定性证据）──────────────────────────────────────
       # Firefox 的 browser/moz.configure 第 14-15 行：
-      #
       #     imply_option("MOZ_APP_VENDOR", "Mozilla")
       #     imply_option("MOZ_APP_ID", "{ec8030f7-c20a-464f-9b0e-13a3a9e97384}")
       #
-      # 【imply_option 的优先级高于 project_flag 的 default】，
-      # 而且它把该选项的来源限定为 implied —— 所以：
-      #   · mozconfig 的 export  -> 报错（origin=mozconfig 不在 allowed 里）
-      #   · CI env               -> 报错（origin=environment 也不在）
-      #   · project_flag default -> 被 imply_option 覆盖，无效
+      # imply_option 会把这些选项的【来源限定为 implied】—— 所以：
+      #   · mozconfig 的 export  -> 报错（origin=mozconfig 不在 allowed）
+      #   · CI 的 env             -> 报错（origin=environment 也不在）
       #
-      # 【这也解释了 ID={Firefox GUID} —— 就是 L15 imply 的那个值。】
+      # ── ★ 但 default 是【有效】的（我一度错判为无效）──────────
+      # 实测对照：
+      #   提交 8c91275 的 patch: default="zen"    -> 产物 Profile=zen
+      #   提交 b2fa9bb 的 patch: default="kokoa"  -> 产物 Profile=kokoa
+      # 产物与 default 【完全对应】。
       #
-      # ── 两条字段要分开处理 ─────────────────────────────────────
+      # 我当初误判的原因：没有核对「构建用的提交」里 default 的实际值，
+      # 而是凭记忆认为它已经是 kokoa 了。
+      # 教训：核对产物时，一定要 checkout/查看【那个构建的提交】的文件状态。
       #
-      # MOZ_APP_VENDOR：被 imply（L14）
-      #   -> env / mozconfig / default 都无效
-      #   -> 【本 workflow 里不要设它】（设了会让构建直接失败）
-      #   -> 要改必须覆盖 browser/moz.configure L14（见下）
+      # 所以 MOZ_APP_PROFILE 的正确做法是：
+      #   src/toolkit/moz-configure.patch 里 default="kokoa"  （已做）
+      # 【不要】在这里设 env。
       #
-      # MOZ_APP_PROFILE：【没有】被 imply（全仓库只有 toolkit/moz.configure 一处定义）
-      #   -> 【env 是有效来源】
-      #   -> 所以这里设它
-      #
-      # ── 关于 Vendor 与 ID：Zen 自己也没改 ───────────────────────
-      # 查过 Zen 官方的 src/browser/ —— 它【没有】browser/moz.configure 的 patch。
-      # 所以 Zen 官方产物的 Vendor 也是 Mozilla、ID 也是那个 Firefox GUID。
-      # 【上游不改的东西，我们也不必改。】
-      MOZ_APP_PROFILE: kokoa
-
-      # MOZ_APP_PROFILE 同理（未验证是否也报错，谨慎起见也先不加）
+      # MOZ_APP_VENDOR 同理不能用 env；但它还被 imply_option 锁死，
+      # 所以 default 也不生效 —— 要改必须覆盖 browser/moz.configure L14。
+      # （Zen 官方也没改它，见 docs/workitem-menubar-configurable.md 附近的记录）
 
     steps:
       - name: ★ 贴牌环境变量 · 诊断（回答「谁设了 MOZ_*」）
