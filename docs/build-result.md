@@ -64,3 +64,61 @@
 4. **点击后是否真的打开 dsh** —— 未验证
 
 > 换句话说：**「能编出来」已经证实；「能跑、能用」还没证实。**
+---
+
+# 产物已下载并清点（2026-09-15 09:2x）
+
+已把 artifact 下到 `E:\temp\kokoa-artifact\`（471.7 MB），逐项核实。
+
+## 产物清单
+
+| 文件 | 大小 | 是什么 |
+|---|---|---|
+| `dist\kokoa-0.1.0t.en-US.win64.installer.exe` | 101.5 MB | **安装器** |
+| `dist\kokoa-0.1.0t.en-US.win64.zip` | 151.0 MB | **免安装压缩包** |
+| `dist\output.mar` | 109.6 MB | 更新包 |
+| `engine\obj-x86_64-pc-windows-msvc\dist\bin\kokoa.exe` | 1.2 MB | **可执行文件** |
+| `dist\kokoa.installer.pretty.exe` | 0.4 MB | 安装器 stub |
+| `dist\jsshell-win64.zip` | 2.0 MB | JS shell（附带） |
+
+**文件名里的 `kokoa-0.1.0t.en-US.win64` 说明品牌、版本、语言、平台都正确。**
+
+## `kokoa.exe` 的身份（读 PE 版本资源，决定任务管理器里显示什么）
+
+```
+FileDescription  : Kokoa Twilight      ✅ 贴牌生效
+ProductName      : Kokoa Twilight      ✅
+ProductVersion   : 0.1.0t              ✅
+OriginalFilename : kokoa.exe           ✅ 可执行文件名已改
+FileVersion      : 156.0               （Firefox 版本号，合理）
+CompanyName      : Mozilla Corporation ⚠️ 残留 —— 应改为 Kokoa
+```
+
+## ★ 新发现：安装器没贴牌
+
+```
+dist\kokoa.installer.exe
+  ProductName : Firefox     ⚠️
+  CompanyName : Mozilla     ⚠️
+```
+
+**安装器（用户实际双击的那个）显示的还是 Firefox。**
+`surfer.json` 的贴牌覆盖了主程序，但**没覆盖安装器**。
+上一份残留清单（`docs/kokoa-zen-residuals.md`）也没提到这一处。
+
+> 这条是**读产物元数据**才发现的，读源码树发现不了 ——
+> 说明「清点产物」这一步不是走过场。
+
+## 更新后的未验证清单
+
+```
+✅ 产物存在且完整（安装器 / 压缩包 / 可执行文件都在）
+✅ 主程序贴牌生效（Kokoa Twilight / kokoa.exe）
+❌ 主程序的 CompanyName 仍是 Mozilla Corporation        <- 待修
+❌ 安装器完全没贴牌（还是 Firefox / Mozilla）            <- 待修
+❌ 没在任何 Windows 机器上启动过
+❌ AI 工作区按钮是否真的出现（需要普通截图）
+❌ 点击后是否真的打开 dsh
+```
+
+> **「能编出来」+「产物正确」已证实；「能跑、能用」还没证实。**
