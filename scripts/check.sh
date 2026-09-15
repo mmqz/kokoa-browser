@@ -371,6 +371,46 @@ check_jarmn() {
   if [ $bad -eq 0 ]; then ok "jar.mn 注册的文件都存在"; fi
 }
 
+# ── ★ 2026-09-15 加：有 moz.build 的子目录必须在父级 DIRS 里 ──────────────
+#
+# 【为什么加这个检查】构建 35007320104 成功，但产物核对时发现：
+#   我的 4 个 .mjs 模块【不在 omni.ja 里】。
+#
+# 根因：我建了 src/zen/kokoa/moz.build（EXTRA_JS_MODULES.zen），
+#       但【没把 "kokoa" 加进 src/zen/moz.build 的 DIRS 列表】——
+#       所以那个子目录【从来没被构建系统处理过】。
+#
+# 这个错的表现很隐蔽：
+#   · 构建【成功】（不报错 —— 只是文件没被打包）
+#   · moz.build 语法也对
+#   · 只有【读产物】才发现模块不在里面
+#
+# 本检查：对有 moz.build 的子目录，确认它在父级 DIRS 里。
+check_mozbuild_dirs() {
+  say "=== moz.build 子目录登记 ==="
+  local bad=0
+  local parent f d listed
+  while IFS= read -r parent; do
+    # 父目录下的子目录（有 moz.build 的）
+    while IFS= read -r d; do
+      f=$(basename "$d")
+      # 父级 DIRS 里有没有它。
+      # 【两种形式都要认】Zen 自己两种都用：
+      #   1) DIRS += [ "名字", ... ]        静态列表（如 src/zen/moz.build）
+      #   2) DIRS += ["名字"]  在 if 里     条件式（如 toolkit/common 的 windows/cocoa）
+      # 我第一版只认形式 1，把 toolkit/common 的 windows/cocoa 误报为缺失。
+      if grep -qE "^[[:space:]]+\"$f\"," "$parent" 2>/dev/null \
+         || grep -qE "DIRS[[:space:]]*\+=[[:space:]]*\[\"$f\"\]" "$parent" 2>/dev/null; then
+        :
+      else
+        bad=$((bad+1))
+        bad "  $parent 的 DIRS 里没有 "$f"（该子目录不会被构建）"
+      fi
+    done < <(find "$(dirname "$parent")" -mindepth 1 -maxdepth 1 -type d -exec test -f "{}/moz.build" \; -print 2>/dev/null)
+  done < <(git ls-files "src/**/moz.build" 2>/dev/null | sort -u)
+  if [ $bad -eq 0 ]; then ok "moz.build 子目录都已登记在父级 DIRS"; fi
+}
+
 # ── 7. mozconfig 里的非法变量 ──────────────────────────────────────────
 #   背景：2026-09-15 一次构建在 Build 步失败（11m52s），报：
 #     mozbuild.configure.options.InvalidOptionError:
@@ -408,8 +448,9 @@ case "$MODE" in
   brands) check_brands ;;
   patches) check_patches ;;
   jarmn)  check_jarmn ;;
+  mozbuild) check_mozbuild_dirs ;;
   mozconfig) check_mozconfig ;;
-  all)    check_syntax; check_json; check_prefs; check_l10n; check_brands; check_patches; check_jarmn; check_mozconfig ;;
+  all)    check_syntax; check_json; check_prefs; check_l10n; check_brands; check_patches; check_jarmn; check_mozbuild_dirs; check_mozconfig ;;
   *)      say "用法: bash scripts/check.sh [syntax|json|prefs|l10n|brands|all]"; exit 2 ;;
 esac
 
