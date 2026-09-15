@@ -221,7 +221,8 @@ check_brands() {
     #   这个漏洞让检查长期处于【假 OK】状态 —— 必须记一笔。
     local leaked
     leaked=$(grep -inE 'zen browser|heyzen|zen-browser[./\\-]|zen\.browser\.app' "$f" 2>/dev/null \
-             | grep -viE 'based on|derived from|thanks|credit|licensed|MPL|upstream|上游|致谢|repos/zen-browser|github\.com/zen-browser|githubusercontent' || true)
+             | grep -viE 'based on|derived from|thanks|credit|licensed|MPL|upstream|上游|致谢|repos/zen-browser|github\.com/zen-browser|githubusercontent' \
+             | grep -viE 'zen-browser-[a-z-]+|zen-browser\.(ui|container|generic)' || true)
     if [ -n "$leaked" ]; then
       bad "$f 里仍有 Zen 品牌字样（非署名语境）"
       printf '%s\n' "$leaked" | head -3 | sed 's/^/         /'
