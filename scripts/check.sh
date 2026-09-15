@@ -22,6 +22,8 @@ fail=0
 say()  { printf '%s\n' "$*"; }
 ok()   { printf '  \033[32mOK\033[0m   %s\n' "$*"; }
 bad()  { printf '  \033[31mFAIL\033[0m %s\n' "$*"; fail=1; }
+# warn 不计入失败 —— 用于「上游既有、非我们造成的」问题，避免检查长期飘红没人看
+warn() { printf '  \033[33mWARN\033[0m %s\n' "$*"; }
 
 # ── 1. 语法检查（node --check，覆盖 src 下全部 .mjs/.js）────────────────
 check_syntax() {
@@ -187,13 +189,81 @@ check_brands() {
   if [ $hits -eq 0 ]; then ok "产品路径下没有 Zen 品牌字样"; fi
 }
 
+# ── 6. patch 文件自洽性（hunk 头行数必须与实际行数一致）──────────────
+#   背景：2026-09-15 一次构建在 Import 步失败，报
+#     error: corrupt patch at src/browser/installer/windows/nsis/defines-nsi-in.patch
+#   根因：手写 patch 时 hunk 头写了 @@ -25,7 +25,7 @@，但实际只有 6 行。
+#   git apply 会直接拒绝。这个错误【本来可以秒级查出来】——不用浪费一次 3 小时构建。
+check_patches() {
+  say "=== patch 文件自洽性 ==="
+  local n=0 bad=0
+  while IFS= read -r f; do
+    [ -f "$f" ] || continue
+    case "$f" in *.patch) ;; *) continue ;; esac
+    n=$((n+1))
+    # 用 awk 校验每个 hunk 头与实际行数
+    local out
+    out=$(awk '
+      /^@@ / {
+        if (inhunk && (oc != oldn || nc != newn)) {
+          printf "  hunk @%d 声称 old=%d new=%d 实际 old=%d new=%d\n", hl, oldn, newn, oc, nc
+          bad++
+        }
+        match($0, /-[0-9]+(,[0-9]+)?/) ; s=substr($0, RSTART+1, RLENGTH-1)
+        split(s, a, ","); oldn = (a[2] == "" ? 1 : a[2]+0)
+        match($0, /\+[0-9]+(,[0-9]+)?/) ; s=substr($0, RSTART+1, RLENGTH-1)
+        split(s, b, ","); newn = (b[2] == "" ? 1 : b[2]+0)
+        hl = NR; oc = 0; nc = 0; inhunk = 1; next
+      }
+      /^diff / {
+        if (inhunk && (oc != oldn || nc != newn)) {
+          printf "  hunk @%d 声称 old=%d new=%d 实际 old=%d new=%d\n", hl, oldn, newn, oc, nc
+          bad++
+        }
+        inhunk = 0; next
+      }
+      inhunk {
+        c = substr($0, 1, 1)
+        if (c == " ") { oc++; nc++ }
+        else if (c == "-") { oc++ }
+        else if (c == "+") { nc++ }
+      }
+      END {
+        if (inhunk && (oc != oldn || nc != newn)) {
+          printf "  hunk @%d 声称 old=%d new=%d 实际 old=%d new=%d\n", hl, oldn, newn, oc, nc
+          bad++
+        }
+        exit (bad > 0 ? 1 : 0)
+      }
+    ' "$f" 2>/dev/null)
+    # 行尾空白 —— 【只作为 WARN】
+    # 原因：Zen 上游自己的 patch 就有很多行尾空白（实测 9 个文件），
+    # 而 CI 用 `git apply --ignore-space-change --ignore-whitespace`，它们照样能应用。
+    # 一律 FAIL 会产生大量误报 —— 误报的检查比没有检查更糟。
+    local trail
+    trail=$(grep -nE "^[+-].*[ 	]$" "$f" 2>/dev/null | head -2 || true)
+
+    # hunk 行数不符 —— 【这才是 FAIL】
+    # git apply 会直接报 corrupt patch，是硬错误。
+    if [ -n "$out" ]; then
+      bad=$((bad+1))
+      printf "%s\n" "$out" | sed "s|^|    $f|"
+      bad "$f hunk 行数不符（git apply 会报 corrupt patch）"
+    elif [ -n "$trail" ]; then
+      warn "$f 有行尾空白的 +- 行（上游也有，CI 已用 --ignore-whitespace）"
+    fi
+  done < <(git ls-files "src/**/*.patch" 2>/dev/null | sort -u)
+  if [ $bad -eq 0 ]; then ok "$n 个 patch 文件 hunk 行数全部自洽"; fi
+}
+
 case "$MODE" in
   syntax) check_syntax ;;
   json)   check_json ;;
   prefs)  check_prefs ;;
   l10n)   check_l10n ;;
   brands) check_brands ;;
-  all)    check_syntax; check_json; check_prefs; check_l10n; check_brands ;;
+  patches) check_patches ;;
+  all)    check_syntax; check_json; check_prefs; check_l10n; check_brands; check_patches ;;
   *)      say "用法: bash scripts/check.sh [syntax|json|prefs|l10n|brands|all]"; exit 2 ;;
 esac
 
