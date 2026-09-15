@@ -10,6 +10,7 @@ ac_add_options --with-app-basename=Kokoa
 ac_add_options --with-l10n-base="${topsrcdir}/browser/locales"
 
 export MOZ_APP_BASENAME=Kokoa
+export MOZ_APP_VENDOR=Kokoa
 export MOZ_BRANDING_DIRECTORY=${brandingDir}
 export MOZ_OFFICIAL_BRANDING_DIRECTORY=${brandingDir}
 

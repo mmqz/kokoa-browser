@@ -2,6 +2,29 @@ diff --git a/browser/installer/windows/nsis/defines.nsi.in b/browser/installer/w
 index a9bf2d67ce522054442be664bda1434c63609ea1..16e03732d78207ce602066a4bccc0d2c2385ca91 100644
 --- a/browser/installer/windows/nsis/defines.nsi.in
 +++ b/browser/installer/windows/nsis/defines.nsi.in
+@@ -25,7 +25,7 @@
+ 
+ # These defines should match application.ini settings
+-!define AppName               "Firefox"
++!define AppName               "Kokoa"
+ !define AppVersion            "@APP_VERSION@"
+ !define GREVersion            @MOZILLA_VERSION@
+ !define AB_CD                 "@AB_CD@"
+@@ -36,11 +36,11 @@
+ !define PrivateBrowsingEXE    "private_browsing.exe"
+ !define MainWindowClass       "MozillaWindowClass"
+ !define DialogWindowClass     "MozillaDialogClass"
+-!define DDEApplication        "Firefox"
+-!define AppRegName            "Firefox"
++!define DDEApplication        "Kokoa"
++!define AppRegName            "Kokoa"
+ !define ToastAumidPrefix      "@MOZ_TOAST_APP_NAME@Toast-"
+ 
+-!define BrandProductName      "Firefox"
++!define BrandProductName      "Kokoa"
+ !ifndef DEV_EDITION
+ !define BrandShortName        "@MOZ_APP_DISPLAYNAME@"
+ !endif
 @@ -147,7 +147,7 @@ VIAddVersionKey "ProductVersion"  "${AppVersion}"
  !define APPROXIMATE_REQUIRED_SPACE_MB "145"
  
