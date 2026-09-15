@@ -79,6 +79,10 @@ kokoa-open-ai-workspace-button =
     .label = AI Workspace
     .tooltiptext = Open Kokoa AI Workspace
 
+kokoa-ai-split-button =
+    .label = AI Split
+    .tooltiptext = Put the AI Workspace side-by-side with the current page
+
 # note: Do not translate the "<br/>" tags in the following string
 
 zen-learn-more-text = Learn More

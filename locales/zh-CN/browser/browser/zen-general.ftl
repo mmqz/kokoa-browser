@@ -68,6 +68,10 @@ kokoa-open-ai-workspace-button =
     .label = AI 工作区
     .tooltiptext = 打开 Kokoa AI 工作区
 
+kokoa-ai-split-button =
+    .label = AI 分屏
+    .tooltiptext = 让 AI 工作区与当前网页并排
+
 # note: Do not translate the "<br/>" tags in the following string
 
 zen-learn-more-text = 了解更多

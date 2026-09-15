@@ -88,6 +88,14 @@ export const ZenCustomizableUI = new (class {
               data-l10n-id="kokoa-open-ai-workspace-button"
               flex="1" />
           </toolbaritem>
+          <!-- Kokoa: 让 AI 工作区与当前网页并排（用 Zen 的原生分屏） -->
+          <toolbaritem id="kokoa-ai-split-button" removable="true" data-l10n-id="kokoa-ai-split-button">
+            <toolbarbutton
+              class="toolbarbutton-1"
+              command="cmd_kokoaToggleAiSplit"
+              data-l10n-id="kokoa-ai-split-button"
+              flex="1" />
+          </toolbaritem>
           <html:div id="zen-sidebar-top-buttons-separator" skipintoolbarset="true" overflows="false"></html:div>
         </hbox>
       </toolbar>
