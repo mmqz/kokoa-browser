@@ -182,6 +182,22 @@ check_brands() {
     case "$f" in
       */surfer.json|configs/common/mozconfig) continue ;;
     esac
+    # 【2026-09-15 加】两类【有意不改】的文件：
+    #
+    # (1) 测试数据 —— src/zen/tests/**
+    #     里面的 zen-browser.app / zen-browser/desktop 是【测试夹具】，
+    #     改了会破坏测试。而且 tests/ 【不进产物】。
+    #     例：browser_space_routing_crud.js 用 "zen-browser.app" 当测试输入。
+    #
+    # (2) macOS hardened runtime entitlement
+    #     src/security/mac/hardenedruntime/production/firefox-browser-xml.patch
+    #     内容是 <string>9V5K9TP787.app.zen-browser.zen</string>
+    #     那是【Zen 的 Apple 开发者 Team ID + bundle id】。
+    #     改成我们的需要【我们自己的 Apple 开发者账号】—— 现在没有。
+    #     【保留，但要记住这是已知项】。
+    case "$f" in
+      src/zen/tests/*|src/security/mac/hardenedruntime/production/firefox-browser-xml.patch) continue ;;
+    esac
     # 【区分「品牌泄漏」与「必需的署名」】——这两者必须分开，否则检查会逼着人去删许可声明。
     # 带署名语境的行（based on / derived from / thanks to / 版权头 / 上游仓库 URL）是【要留的】：
     # MPL-2.0 与诚实都要求致谢上游。

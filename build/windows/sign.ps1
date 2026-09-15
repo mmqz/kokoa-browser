@@ -216,7 +216,9 @@ SignAndPackage x86_64
 $files = Get-ChildItem .\windsign-temp\windows-x64-signed-x86_64, .\windsign-temp\windows-x64-signed-arm64 -Recurse -Include *.exe
 signtool.exe sign /n "$SignIdentity" /t http://time.certum.pl/ /fd sha256 /v $files
 
-$binariesRepo = "zen-browser/windows-binaries"
+# 【2026-09-15 改】Windows 签名产物的暂存仓库。
+# 原来指向上游的 windows-binaries 仓库（见 git 历史）。
+$binariesRepo = "tomjiu/kokoa-browser"
 $stagingTag = "windows-signed-$GithubRunId"
 echo "Ensuring staging release $stagingTag exists on $binariesRepo"
 gh release create $stagingTag --repo $binariesRepo --prerelease --title "Windows signed bundles ($GithubRunId)" --notes "Signed Windows bundles for run $GithubRunId, consumed by the release workflow. Safe to delete."

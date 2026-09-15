@@ -311,7 +311,7 @@ export class nsZenSpaceRoutingDialog {
         input.placeholder = "zen-browser\\.app";
         break;
       default:
-        input.placeholder = "zen-browser.app";
+        input.placeholder = "kokoa.local";
         break;
     }
   }
