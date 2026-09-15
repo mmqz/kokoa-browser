@@ -58,6 +58,21 @@ class ZenStartup {
         gZenUIManager.init();
         this.#initUIComponents();
         this.#checkForWelcomePage();
+
+        // 【Kokoa 2026-09-15】工作区与会话的联动。
+        //
+        // 为什么放这里：gZenWorkspaces.init() 完成后工作区才就绪，
+        // 那时注册 addChangeListeners 才拿得到完整的 workspace 对象。
+        // 钩子本身的说明见 src/zen/kokoa/KokoaWorkspaceSessions.mjs。
+        try {
+          const { initWorkspaceSessionBinding } = ChromeUtils.importESModule(
+            "resource:///modules/zen/KokoaWorkspaceSessions.mjs"
+          );
+          initWorkspaceSessionBinding();
+        } catch (e) {
+          // 不致命：联动失败不该影响浏览器启动
+          console.error("[Kokoa] 初始化工作区会话联动失败: " + e);
+        }
       });
     } catch (e) {
       console.error("ZenThemeModifier: Error initializing browser layout", e);
