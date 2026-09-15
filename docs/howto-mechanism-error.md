@@ -1,3 +1,21 @@
+# ⛔【本文结论已撤回】
+
+> **2026-09-15 更正：我说 how-to 文档那条「prefs/zen/*.yaml 经 tools/ffprefs 编译」是错的**
+> **—— 其实那条是对的，错的是我。**
+>
+> 我只读了 `tools/ffprefs/src/main.rs` 的【头部注释】（那是 Firefox 原版 StaticPrefs 的说明，
+> 要求 cpptype/mirror 字段），**没往下读代码**。
+> 真相在 L110：`DYNAMIC_PREFS = "../engine/browser/app/profile/zen.js"`，
+> 而 L147 就是 `if ext == "yaml"` —— 它确实读 prefs/*.yaml。
+>
+> 证据还包括 CI 日志：`Writing preferences to: Dynamic: .../app/profile/zen.js`
+>
+> **见**：`docs/prefs-mechanism-CONFIRMED.md`
+>
+> 本文以下内容保留，作为「只读了一部分就下结论」的样本。
+
+---
+
 # ★ how-to 文档的机制描述错误（TASK-01 核验的盲区）
 
 > 2026-09-15 发现。**这不是 TASK-01 的错** —— TASK-01 的任务是核验

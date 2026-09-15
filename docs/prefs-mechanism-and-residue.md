@@ -1,3 +1,17 @@
+# ⚠️【部分更正】
+
+> **2026-09-15**：本文的【主结论是对的】（prefs/*.yaml 的内容被合并进 firefox.js），
+> 但我当时写「消费者未确认」—— **现在已确认：就是 `tools/ffprefs`。**
+>
+> 链路：`prefs/*.yaml` → `tools/ffprefs` → `engine/browser/app/profile/zen.js`
+> → 在 firefox.js 末尾加 `#include zen.js` → 构建进 `defaults/preferences/firefox.js`
+>
+> **见**：`docs/prefs-mechanism-CONFIRMED.md`
+>
+> 本文其它内容（两处品牌残留的发现）仍然有效。
+
+---
+
 # ★ 突破：prefs/*.yaml 的机制查清了 + 发现两处贴牌残留
 
 > 2026-09-15。这一轮把之前「查不到」的问题解决了。
