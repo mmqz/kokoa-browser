@@ -1,0 +1,70 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!--
+  Kokoa 设置分类。
+
+  【这个文件怎么被用】
+    preferences-xhtml.patch 里 #include 它，
+    并加一个 <html:moz-page-nav-button view="paneKokoa"> 的导航按钮。
+
+  【★ 一个必须注意的陷阱】（TASK-06 发现，我已核实）
+    preferences-js.patch L27 的 template 展开条件是：
+      if (template && (!srdSectionPrefs.all || categoryName.startsWith("paneZen")))
+    我们的分类叫 paneKokoa —— 【不命中】。
+    所以同一个 patch 里还要把条件改成：
+      ... || categoryName.startsWith("paneZen") || categoryName.startsWith("paneKokoa")
+    否则面板【不会展开】（表现为右侧空白）。
+
+  【命名】用 paneKokoa 而不是 paneZenKokoa：
+    我们是在做自己的产品，不该把 Kokoa 挂在 Zen 的命名空间下。
+-->
+<!-- 逻辑脚本。照 zenLooksAndFeel.inc.xhtml 的模式：script 在 template 之前。 -->
+<script type="text/javascript" src="chrome://browser/content/preferences/kokoa-settings.js"/>
+<html:template id="template-paneKokoa">
+  <hbox class="subcategory" hidden="true">
+    <html:h1 data-l10n-id="pane-kokoa-title"></html:h1>
+  </hbox>
+
+  <groupbox>
+    <html:h2 data-l10n-id="kokoa-section-ai"></html:h2>
+    <description data-l10n-id="kokoa-ai-description"></description>
+
+    <!--
+      AI 工作区的两个动作。目前是按钮（而不是纯复选框），
+      因为「打开面板 / 分屏」是动作，没有持久的开关状态。
+      以后 dsh 的配置项（连接地址 / 模型 / 会话）会加在这一节下面。
+    -->
+    <hbox>
+      <button
+        id="kokoaOpenAiWorkspace"
+        data-l10n-id="kokoa-open-ai-workspace-button"
+        class="accessory-button" />
+      <button
+        id="kokoaToggleAiSplit"
+        data-l10n-id="kokoa-ai-split-button"
+        class="accessory-button" />
+    </hbox>
+
+    <!--
+      dsh sidecar 的运行状态（只读展示）。
+      内容由 kokoa-settings.js 填 —— 它读 KokoaDshSidecar.getDshState()。
+    -->
+    <description id="kokoaDshStatus" data-l10n-id="kokoa-dsh-status-loading"></description>
+  </groupbox>
+
+  <!--
+    【给后续集成 dsh 的人】
+    下面这一节是预留给「AI 详细配置」的。
+    加新项时：
+      · 每项写进 prefs/kokoa/*.yaml（默认值）+ 这里一个控件
+      · 文案写进 locales/{en-US,zh-CN}/.../kokoa-preferences.ftl
+      · 逻辑挂在 src/zen/kokoa/kokoa-settings.js 的 gKokoaSettings 上
+  -->
+  <groupbox>
+    <html:h2 data-l10n-id="kokoa-section-menu"></html:h2>
+    <description data-l10n-id="kokoa-menu-description"></description>
+    <description data-l10n-id="kokoa-menu-todo"></description>
+  </groupbox>
+</html:template>
