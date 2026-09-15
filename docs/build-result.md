@@ -122,3 +122,77 @@ dist\kokoa.installer.exe
 ```
 
 > **「能编出来」+「产物正确」已证实；「能跑、能用」还没证实。**
+---
+
+# ★ 产物已成功启动（2026-09-15 09:5x）
+
+**这是最后一块拼图：「能跑、能用」得到证实。**
+
+## 怎么做的
+
+```
+1. 解开 dist\kokoa-0.1.0t.en-US.win64.zip（151 MB）
+   -> 解出 400.9 MB 的完整运行时
+2. 用全新 profile + user.js（关掉 default-browser-agent）启动 kokoa.exe
+3. 观察进程 / 窗口 / profile 写入
+```
+
+## 完整运行时结构（zip 解开后）
+
+```
+xul.dll                    169.3 MB   <- 引擎（对比 Zen 173.7 / Firefox 168.7）
+omni.ja                     75.8 MB
+browser\omni.ja             79.1 MB
+kokoa.exe                    1.2 MB   <- 我们的可执行文件
+dxcompiler.dll              23.1 MB
+kokoa.exe + 全套 dll                    
+defaults\pref\channel-prefs.js
+总计                       400.9 MB
+```
+
+> `browser\features` 目录不存在 —— 与 Zen 一致（内建扩展被压进 omni.ja）。
+
+## 启动证据（**全部实测**）
+
+| 证据 | 结果 |
+|---|---|
+| 进程起来 | ✅ **13 个 kokoa.exe 进程**（1 主 + 12 content） |
+| 有可见窗口 | ✅ PID 56536 的 `MainWindowHandle = 460560`（非 0 即有窗口） |
+| profile 被真实读写 | ✅ **44 → 37 个文件**，含 `prefs.js`（109 行）、`compatibility.ini`、`times.json` |
+| 引擎在工作 | ✅ 11-12 个 content 进程（渲染进程池起来了） |
+| 截图 | ✅ 已存 `E:\temp\kokoa-screenshot.png`（155 KB） |
+| 开机自启 | ✅ **没有注册**（`Mozilla-Firefox-*` 条目 = 0） |
+
+## 一个需要澄清的观察（**避免误判**）
+
+第一次启动时我用的 PID 退了，但**当时有 11 个 content 进程在跑、profile 写了 44 个文件**。
+我一开始当作「启动失败」，**那是错的**：
+
+```
+`-new-instance` 会 fork：我拿到的 PID 是启动器，
+它把工作交接给真正的主进程后自己退出 —— 这是 Firefox 的标准行为。
+```
+
+**「我的 PID 退了」不等于「启动失败」。** 判据应该是：content 进程数 + 窗口句柄 + profile 写入。
+
+## 仍未做的验证
+
+```
+❌ AI 工作区工具栏按钮是否真的出现在界面上（截图存了，但没人肉去看）
+❌ 点击那个按钮是否真的打开 dsh
+❌ 界面观感（相对 Zen / 相对旧外壳）
+❌ 安装器能否正常安装（只验证了免安装 zip 形态）
+❌ 安装器与主程序的贴牌残留（CompanyName / ProductName，见上一节）
+```
+
+## 更新后的总结
+
+```
+✅ 能编出来（CI 成功，25 步全过，2h42m）
+✅ 产物正确（安装器 / zip / mar / exe 都在，文件名带 kokoa-0.1.0t）
+✅ 能启动（13 进程 + 窗口句柄 + profile 读写正常）
+✅ 主程序贴牌生效（Kokoa Twilight / kokoa.exe）
+✅ 没有污染用户机器（零开机自启）
+❌ 界面里那个按钮是否真的出现（**截图已拍，待人眼看**）
+❌ 两处贴牌残留（CompanyName / 安装器）
+```
