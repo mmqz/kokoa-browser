@@ -774,6 +774,16 @@ class nsZenWorkspaces {
     for (const workspace of this._workspaceCache) {
       // We don't want to depend on this by mistake
       delete workspace.hasCollapsedPinnedTabs;
+
+      // 【Kokoa 2026-09-15】兼容【旧 profile 里已有的工作区】。
+      // 那些是在我们加 kokoaSessionId 之前建的，对象上没有这个字段。
+      // 统一补成 null，这样后面读它时不用每次判 undefined。
+      //
+      // 这里只补不删 —— 因为我们【想】让它跟着会话存储走
+      // （与上面那个"临时字段"的语义正好相反）。
+      if (workspace.kokoaSessionId === undefined) {
+        workspace.kokoaSessionId = null;
+      }
     }
     promise.finally(() => {
       this.#hasInitialized = true;
@@ -1239,6 +1249,43 @@ class nsZenWorkspaces {
         "zen-workspace-default-profile"
       );
     }
+  }
+
+  /**
+   * 【Kokoa 2026-09-15】记录某个工作区对应的 dsh 会话 id。
+   *
+   * 为什么要这个方法：
+   *   · 我们给 space 对象加了 kokoaSessionId 字段（见 #createWorkspaceData）
+   *   · 那个字段会被【会话存储自动持久化】（TASK-05 已核实无白名单）
+   *   · 但前提是【对象被保存过】—— 所以改完要显式 saveWorkspace
+   *
+   * 为什么不会被同步带走：
+   *   · ZenSpacesSyncModel 是字段白名单（只投影 6 个字段，TASK-08 已核实）
+   *
+   * @param {string} uuid       工作区 uuid
+   * @param {string|null} sessionId  dsh 会话 id；null 表示解除绑定
+   * @returns {boolean} 是否找到并更新了
+   */
+  updateSpaceSessionId(uuid, sessionId) {
+    const workspace = this._workspaceCache.find(ws => ws.uuid === uuid);
+    if (!workspace) {
+      console.warn("[Kokoa] updateSpaceSessionId: 找不到工作区 " + uuid);
+      return false;
+    }
+    workspace.kokoaSessionId = sessionId || null;
+    this.saveWorkspace(workspace);
+    return true;
+  }
+
+  /**
+   * 【Kokoa 2026-09-15】读某个工作区绑定的 dsh 会话 id。
+   *
+   * @param {string} uuid
+   * @returns {string|null}
+   */
+  getSpaceSessionId(uuid) {
+    const workspace = this._workspaceCache.find(ws => ws.uuid === uuid);
+    return workspace ? workspace.kokoaSessionId || null : null;
   }
 
   saveWorkspace(workspaceData, { insertAfterId = null } = {}) {
@@ -2558,6 +2605,16 @@ class nsZenWorkspaces {
       name,
       theme: nsZenThemePicker.getTheme([]),
       containerTabId,
+      // 【Kokoa 2026-09-15】这个工作区对应的 dsh 会话 id（默认没有）。
+      //
+      // 为什么可以直接加字段（TASK-05 已核实）：
+      //   · 持久化侧 getWorkspacesForSessionStore 用 { ...space } 浅拷贝 —— 无字段白名单
+      //   · 读取侧 restoreWorkspacesFromSessionStore 原样装入，只 delete
+      //     hasCollapsedPinnedTabs 那一个临时字段（ZenSpaceManager L774-L777）
+      //   · 同步侧 ZenSpacesSyncModel 是【字段白名单】——
+      //     只投影 uuid/name/icon/theme/containerGuid/children
+      //     所以这个字段【不会被同步带走】（TASK-08 已核实）
+      kokoaSessionId: null,
     };
     return workspace;
   }
