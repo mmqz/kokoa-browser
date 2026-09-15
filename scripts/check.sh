@@ -210,8 +210,17 @@ check_brands() {
     # 缺陷 2：排除规则里的 https?:// 会把【所有 URL】当署名跳过 —— 太宽。
     #   而品牌泄漏恰恰常出现在 URL 里（zen-browser.app、share.zen-browser.app）。
     #   -> 去掉 https?://，只在真正有署名语境词时才跳过。
+    #
+    # 缺陷 3【2026-09-15 又发现，更隐蔽】：字符类 [./] 漏了【反斜杠】。
+    #   实际踩到：src/zen/space-routing/ZenSpaceRoutingDialog.mjs:311
+    #       input.placeholder = "zen-browser\\.app";
+    #   源码里是转义写法 zen-browser\.app（字节是 zen-browser\ + .app），
+    #   而 [./] 只匹配 . 与 / —— \\ 匹配不上，所以【整条漏报】。
+    #   -> 字符类改成 [./\\-]（含反斜杠与连字符），覆盖所有写法。
+    #
+    #   这个漏洞让检查长期处于【假 OK】状态 —— 必须记一笔。
     local leaked
-    leaked=$(grep -inE 'zen browser|heyzen|zen-browser[./]|zen\.browser\.app' "$f" 2>/dev/null \
+    leaked=$(grep -inE 'zen browser|heyzen|zen-browser[./\\-]|zen\.browser\.app' "$f" 2>/dev/null \
              | grep -viE 'based on|derived from|thanks|credit|licensed|MPL|upstream|上游|致谢|repos/zen-browser|github\.com/zen-browser|githubusercontent' || true)
     if [ -n "$leaked" ]; then
       bad "$f 里仍有 Zen 品牌字样（非署名语境）"

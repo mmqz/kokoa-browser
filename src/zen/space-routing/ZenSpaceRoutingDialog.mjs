@@ -308,7 +308,7 @@ export class nsZenSpaceRoutingDialog {
   updateInputPlaceholder(matchType, input) {
     switch (matchType) {
       case "regex":
-        input.placeholder = "zen-browser\\.app";
+        input.placeholder = "kokoa\\.local";
         break;
       default:
         input.placeholder = "kokoa.local";
