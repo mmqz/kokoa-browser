@@ -18,4 +18,5 @@
 EXTRA_JS_MODULES.zen += [
     "KokoaAiPanel.mjs",
     "KokoaDshSidecar.mjs",
+    "KokoaAiSplit.mjs",
 ]

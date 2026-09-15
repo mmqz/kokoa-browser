@@ -232,6 +232,34 @@ document.addEventListener(
             break;
           }
           default:
+          case "cmd_kokoaToggleAiSplit": {
+            // Kokoa：把 AI 工作区与当前网页【并排】。
+            //
+            // 【设计原则：用 Zen 的原生机制】
+            //   主线旧外壳（boot.js L1075 toggleAiSplit）自己算坐标 + force() 定位，
+            //   那是注入式外壳的无奈之举。
+            //   我们有 Zen 的原生分屏，而且 AI 面板本来就是个普通 tab，
+            //   所以直接调 gZenViewSplitter.splitTabs ——
+            //   这是 ADR-017「拥有结构 vs 对抗结构」的直接应用。
+            //
+            // 【注意】splitTabs 参数不合法时【静默 return，不报错】
+            //   （ZenViewSplitter L1440），所以 KokoaAiSplit 里自己做了断言。
+            const { openAiTab } = ChromeUtils.importESModule(
+              "resource:///modules/zen/KokoaAiPanel.mjs"
+            );
+            const { toggleAiSplit } = ChromeUtils.importESModule(
+              "resource:///modules/zen/KokoaAiSplit.mjs"
+            );
+
+            const splitTab = openAiTab(window);
+            const r = toggleAiSplit(window, splitTab.tab);
+            if (r.ok) {
+              console.info("[Kokoa] AI 分屏: " + r.action);
+            } else {
+              console.warn("[Kokoa] AI 分屏失败: " + r.reason);
+            }
+            break;
+          }
             gZenGlanceManager.handleMainCommandSet(event);
             if (event.target.id.startsWith("cmd_zenWorkspaceSwitch")) {
               const index =
