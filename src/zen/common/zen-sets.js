@@ -168,14 +168,92 @@ document.addEventListener(
           }
           case "cmd_kokoaOpenAiWorkspace": {
             // Kokoa first-owned UI: open the local AI workspace as a tab.
-            // URL is a constant on purpose — no config system yet.
-            gBrowser.selectedTab = gBrowser.addTab(
-              "http://127.0.0.1:3080/",
-              {
-                triggeringPrincipal:
-                  Services.scriptSecurityManager.getSystemPrincipal(),
+            //
+            // 【2026-09-15 修】原实现硬编码 "http://127.0.0.1:3080/"，但 dsh 要求 token ——
+            // 打开无 token 的地址会显示 "web authentication required; reopen the URL
+            // printed by dsh web"。
+            //
+            // 三级回退（照抄主线 apps/gecko-shell/.../kokoa/boot.js 的 panelUrl() L154-L170）：
+            //   1. 环境变量 KOKOA_DSH_URL —— 启动器注入，【带 token】
+            //   2. <state>/gecko-shell/kokoa-panel.url 文件 —— 开发期
+            //   3. 硬编码兜底 —— 会缺 token，所以下面会给出明确提示
+            const KOKOA_DEFAULT_DSH_URL = "http://127.0.0.1:3080/";
+
+            let url = "";
+            let urlSource = "";
+
+            // 1) 环境变量优先 —— 它带着 dsh 的 token
+            try {
+              url = Services.env.get("KOKOA_DSH_URL") || "";
+              if (url) {
+                urlSource = "env:KOKOA_DSH_URL";
               }
-            );
+            } catch (e) {
+              // Services.env 在某些沙箱下不可用 —— 不是致命错误，继续回退
+            }
+
+            // 2) 开发期文件：<state>/gecko-shell/kokoa-panel.url
+            //    注意：这个命令处理函数【不是 async】（见 addEventListener 回调），
+            //    所以不能用 await IOUtils.readUTF8 —— 用同步的 FileUtils 读。
+            //    （第一版我写了 await，被 node --check 当场拦下，见 commit 说明）
+            if (!url) {
+              try {
+                const stateDir = Services.env.get("KOKOA_STATE_DIR") || "";
+                if (stateDir) {
+                  const { FileUtils } = ChromeUtils.importESModule(
+                    "resource://gre/modules/FileUtils.sys.mjs"
+                  );
+                  const file = FileUtils.getFile("ProfD", []);
+                  // 用 stateDir 拼绝对路径：ProfD 只是拿一个 File 对象当模板
+                  file.initWithPath(stateDir);
+                  file.append("gecko-shell");
+                  file.append("kokoa-panel.url");
+                  if (file.exists()) {
+                    // 用 nsIFileInputStream + 显式 UTF-8 解码（FileUtils.readFileToString
+                    // 在新版已废弃；IOUtils.readUTF8 是 async，本函数不是 async）
+                    const stream = Cc[
+                      "@mozilla.org/network/file-input-stream;1"
+                    ].createInstance(Ci.nsIFileInputStream);
+                    stream.init(file, -1, -1, 0);
+                    const raw = NetUtil.readInputStreamToString(
+                      stream,
+                      stream.available(),
+                      { charset: "UTF-8" }
+                    );
+                    stream.close();
+                    if (raw && raw.trim()) {
+                      url = raw.trim();
+                      urlSource = "file:kokoa-panel.url";
+                    }
+                  }
+                }
+              } catch (e) {
+                // 文件不存在是正常情况，继续回退
+              }
+            }
+
+            // 3) 兜底 —— 明确告诉用户这里【可能没有 token】
+            if (!url) {
+              url = KOKOA_DEFAULT_DSH_URL;
+              urlSource = "hardcoded(no token)";
+            }
+
+            console.info("[Kokoa] opening AI workspace: " + urlSource + " -> " + url);
+
+            // 没有 token 时给出可操作的提示，而不是让 dsh 报一句看不懂的错
+            if (!/[?&]token=/.test(url)) {
+              console.warn(
+                "[Kokoa] AI workspace URL has no token. dsh will show " +
+                  "\u0027web authentication required\u0027. Set KOKOA_DSH_URL " +
+                  "env var (the dsh CLI prints the full URL with token) or write " +
+                  "it to <KOKOA_STATE_DIR>/gecko-shell/kokoa-panel.url"
+              );
+            }
+
+            gBrowser.selectedTab = gBrowser.addTab(url, {
+              triggeringPrincipal:
+                Services.scriptSecurityManager.getSystemPrincipal(),
+            });
             break;
           }
           default:
