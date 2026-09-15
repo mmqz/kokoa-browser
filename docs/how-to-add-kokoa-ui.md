@@ -91,7 +91,7 @@ E:\Code\ai\zen-base\
 | 角色 | 路径 | 关键行 |
 |---|---|---|
 | 窗口级 UI 总管 | `src\zen\common\modules\ZenUIManager.mjs` | L9 `window.gZenUIManager`；L977 `window.gZenVerticalTabsManager` |
-| 工具栏区域注册 | `src\zen\common\sys\ZenCustomizableUI.sys.mjs` | L17 `startup()`；L40 `init()`；L194 `registerToolbarNodes()` |
+| 工具栏区域注册 | `src\zen\common\sys\ZenCustomizableUI.sys.mjs` | L17 `startup()`；L40 `init()`；L201 `registerToolbarNodes()` |
 | 启动顺序 | `src\zen\common\modules\ZenStartup.mjs` | L31 `#zenInitBrowserLayout`；L81 `delayedStartupFinished` |
 | 组件装载清单 | `src\zen\common\ZenPreloadedScripts.js` | L15–L32 脚本列表；L38–L43 自定义元素 |
 | command 分发 | `src\zen\common\zen-sets.js` | L12–L180 switch |
@@ -205,7 +205,7 @@ E:\Code\ai\zen-base\
 
 - L51–L56 在 `gNavToolbox` 后插 `<splitter id="zen-sidebar-splitter">`；
 - L58–L88 在 toolbox 前插侧栏顶部按钮区 `#zen-sidebar-top-buttons`；
-- L99–L102 设置默认宽度（macOS 230px / 其它 186px）。
+- L46–L47 设置默认宽度（macOS 230px / 其它 186px）。
 
 `ZenUIManager.mjs` 中 `gZenVerticalTabsManager`（L977 起）：
 
@@ -633,7 +633,7 @@ Services.prefs.setBoolPref(kPref, true);
 | L70 | 把 `"zen-sidebar-top-buttons"` 加进 toolbars 集合 |
 | L106 | 每窗口 `ZenCustomizableUI.init(aWindow)` |
 | L111 | `area.startsWith("zen-")` 时跳过 Firefox 默认 registerToolbarNode |
-| L117 | 改调 `ZenCustomizableUI.registerToolbarNodes(aWindow)`（L194–L201） |
+| L117 | 改调 `ZenCustomizableUI.registerToolbarNodes(aWindow)`（L201–L208） |
 | L125–L128 | single-toolbar 模式下把 nav-bar 的 widget 插到 zen 侧栏区 |
 
 **你的新按钮只要落在 `zen-sidebar-top-buttons` 这个已注册 area 里就会自动工作。**
@@ -655,7 +655,7 @@ const fragment = this.window.MozXULElement.parseXULToFragment(`
 container.after(fragment);
 ```
 
-图标 CSS 抄 `icons.css` L1007（`#zen-copy-url-button image`）。
+图标 CSS 抄 `icons.css` L1012（`#zen-copy-url-button image`）。
 
 ---
 
