@@ -37,8 +37,8 @@
     "twilight": {
       "backgroundColor": "#1A1B26",
       "brandShorterName": "Kokoa",
-      "brandShortName": "Kokoa Twilight",
-      "brandFullName": "Kokoa Browser Twilight",
+      "brandShortName": "Kokoa",
+      "brandFullName": "Kokoa Browser",
       "release": {
         "displayVersion": "0.1.0t",
         "github": {

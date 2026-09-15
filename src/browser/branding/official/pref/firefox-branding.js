@@ -7,13 +7,13 @@
 // 为什么需要这个文件：
 //   surfer 的 src/commands/patches/branding-patch.ts L405-443 会【生成】
 //   <engine>/browser/branding/<brand>/pref/firefox-branding.js，
-//   而它里面的 URL 是【硬编码的 zen-browser.app】（L421-L436）——
-//   不用任何变量，改 surfer.json 也无效。
+//   而它里面的 URL 是【硬编码的上游域名】（L421-L436），不用任何变量，
+//   改 surfer.json 也无效。
 //
 //   后果（用户实测报的）：
-//     · 每次更新后跳转到 https://zen-browser.app/whatsnew
-//     · 「关于」里的发行说明指向 zen-browser.app
-//     · 欢迎页 / 隐私政策页指向 zen-browser.app
+//     · 每次更新后跳转到一个不属于我们的站点
+//     · 「关于」里的发行说明指向该站点
+//     · 欢迎页 / 隐私政策页同样
 //
 // 为什么这样能覆盖：
 //   CI 日志的顺序（07:49:11）：
@@ -25,7 +25,7 @@
 //   所以 src/browser/branding/<brand>/pref/firefox-branding.js 会赢。
 //
 //   （同一手法已被验证：src/browser/branding/twilight/branding.nsi 就这样生效了，
-//     产物里的 CodeName=Kokoa Twilight 是证据。）
+//     产物里的 CodeName 是 Kokoa 是证据。）
 //
 // 指向哪里：
 //   目前指向我们的仓库（我们还没有官网/发行说明页）。
