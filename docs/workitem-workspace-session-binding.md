@@ -123,3 +123,120 @@ gZenViewSplitter.splitTabs([target, aiTab], "vsep");   // 左右分栏
 ❓ dsh 侧如何「结束一个会话」（那是 dsh 的 API，不在 Zen 源码里）
 ❓ AI 面板如何响应「切换会话」（我们的面板接口还没有）
 ```
+
+---
+
+# ★ 重大修正（2026-09-15）：我原来的方案是错的
+
+## 错在哪
+
+我原来写「给 AI 标签的 URL 加 sessionId 参数」。
+
+**主线代码里有一条实测结论直接否掉了它**（`apps/gecko-shell/.../boot.js` L1253-L1259）：
+
+```
+· dsh web 地址【当前不含会话 id】：页面只认 ?token=
+  拿到 cookie 后 302 到干净根路径；
+  全量扫 dsh 客户端产物（dsh-web-frontend/dist + 所有 dsh-client-* 的 lib/client.js）：
+    pushState 0 处、location.hash 0 处、window.history 0 处
+  ——【没有任何 URL 路由】
+· dsh 自己唯一带会话 id 的 URL 形态是它的 HTTP 约定 sessionId=session-<uuid>
+  （dsh-session-log-export/lib/client.js:105-107 的 /api/session.export）
+· 今天真正可观测的「这个标签是哪个会话」信号是【标签标题】：
+  dsh 会把当前会话标题写进 document.title（"<会话标题> — <产品名>"，
+  dsh-client-ui-layout/lib/client.js:62），外壳能直接读 contentTitle
+```
+
+**所以：往 URL 里塞 sessionId 是无效的 —— dsh 前端根本不读 URL 路由。**
+
+## 正确方案（主线已经实现，可直接照抄）
+
+### 绑定信号有三个，按可靠性排序
+
+| 信号 | 怎么用 | 可靠性 |
+|---|---|---|
+| **URL fragment `#kokoa-ws=<id>`** | 外壳自己写进 AI 标签 URL；**dsh 不读**（已验证 0 处 hash 使用），无副作用 | ✅ 外壳完全可控 |
+| **标签标题** | dsh 写 `"<会话标题> — <产品名>"`，用 ` — ` 分割取前半 | ✅ dsh 侧真实存在 |
+| **HTTP API** | `/api/session.export` 等，参数 `sessionId=session-<uuid>` | ⚠️ 要发请求 |
+
+### 主线已有的实现（全部可照抄）
+
+```js
+// 1) 工作区标识：URL fragment
+const WS_FRAG = "#kokoa-ws=";
+function openAiTab(win, wsFrag) {
+  const url = panelUrl() + (wsFrag || "");   // 形如 <base>/#kokoa-ws=<id>
+  return win.gBrowser.addTab(url, {...});
+}
+
+// 2) 关键坑：比较 URL 时必须【同时】切掉 ? 与 #
+function aiTabBase() {
+  // ★ 只切 "?" 的话 findAiTab 再也认不出 AI 标签（分屏/复用会全部失配）
+  return urlBase(panelUrl());
+}
+function findAiTab(win) {
+  const base = aiTabBase();
+  for (const t of win.gBrowser.tabs) {
+    const spec = t.linkedBrowser?.currentURI?.spec;
+    if (spec && urlBase(spec) === base) return t;
+  }
+  return null;
+}
+
+// 3) 从标签标题提取会话标题
+function sessionTitleFromTabTitle(title) {
+  const s = String(title || "").trim();
+  if (!s) return null;
+  const i = s.lastIndexOf(" — ");      // U+2014 em dash，前后有空格
+  if (i <= 0) return null;              // 没有分隔符 = 还是产品标题本身
+  return s.slice(0, i).trim() || null;
+}
+
+// 4) 会话 id 的格式（UUID）
+const SESSION_ID_RE = new RegExp(
+  "session-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+);
+```
+
+### 原 `sessionIdFromUrl()` 的四种取法（保留，作为兜底）
+
+`boot.js` L1297-L1331 实现了四级回退：
+
+```
+① query 上的会话参数（sessionid / session_id / session / kokoa-session）
+② fragment 上的同上
+③ 路径形态 /session/<id>
+④ 都没有 -> { id: null, source: "none" }   【不编造】
+```
+
+## 修正后的实施步骤
+
+**替换原来的「步骤 1/2」中关于 URL 的部分：**
+
+```
+步骤 1（不变）给 space 加 kokoaSessionId 字段
+
+步骤 2（修改）：
+  a) 打开 AI 标签时带上工作区 fragment：
+       gBrowser.addTab(panelUrl() + "#kokoa-ws=" + space.uuid, {...})
+  b) 查找 AI 标签时【同时切掉 ? 与 #】再比较
+       （这是主线踩过的坑，注释里写得很清楚）
+  c) 会话 id 的获取：
+       - 优先：URL 里有 sessionId= 就取（可能是我们或 dsh 写的）
+       - 其次：读标签标题，用 sessionTitleFromTabTitle 提取
+       - 都没有：null（不编造）
+  d) 切换工作区时（addChangeListeners）：
+       按 workspace.uuid 找到对应 AI 标签并激活它
+```
+
+## 教训
+
+**我在写实施计划时，没有先去读主线已经解决过的同类问题。**
+
+主线旧外壳做的是【同一件事】（AI 工作区与网页绑定），而且它已经把 dsh 的
+URL 行为、会话 id 格式、可观测信号全部实测过了。**这些结论就写在它的代码注释里。**
+
+> 我花了几轮去「设计」一个主线早就验证过不可行的方案。
+> **应该先搜主线的既有实现，再设计新方案。**
+
+这条已写进本文，作为流程提醒。
