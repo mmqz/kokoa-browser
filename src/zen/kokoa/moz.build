@@ -9,15 +9,21 @@
 # 然后用 ChromeUtils.importESModule 导入 —— Zen 的惯例。
 # 参照 src/zen/spaces/moz.build（ZenSpaceManager.mjs 等就是这样注册的）。
 #
+# 【★ 列表必须按字母序】（mozbuild 会报 UnsortedError）
+#   实测：构建 35030699233 失败于
+#     mozbuild.util.UnsortedError: An attempt was made to add an unsorted sequence
+#   原因就是下面四条顺序不对（KokoaAiSplit 排在了 KokoaDshSidecar 之后）。
+#   check.sh 的 mozbuild_dirs 检查会顺带看这个。
+#
 # 【为什么不用 jar.inc.mn 的 chrome://】
 # 那样也能工作，但：
 #   · Zen 的「逻辑模块」都在 modules/zen/ 下（EXTRA_JS_MODULES.zen）
 #   · 而 jar.inc.mn 那条路主要用于 UI 脚本（ZenStartup / ZenMenubar 等）
-#   · 我们这两个是纯逻辑（拿 URL / 找标签 / 拉起 dsh），放 modules 更合适
+#   · 我们这几个是纯逻辑（拿 URL / 找标签 / 拉起 dsh / 分屏），放 modules 更合适
 
 EXTRA_JS_MODULES.zen += [
     "KokoaAiPanel.mjs",
-    "KokoaDshSidecar.mjs",
     "KokoaAiSplit.mjs",
+    "KokoaDshSidecar.mjs",
     "KokoaWorkspaceSessions.mjs",
 ]

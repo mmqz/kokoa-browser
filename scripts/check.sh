@@ -408,6 +408,33 @@ check_mozbuild_dirs() {
       fi
     done < <(find "$(dirname "$parent")" -mindepth 1 -maxdepth 1 -type d -exec test -f "{}/moz.build" \; -print 2>/dev/null)
   done < <(git ls-files "src/**/moz.build" 2>/dev/null | sort -u)
+
+  # ── 2026-09-15 加：EXTRA_JS_MODULES.zen 的条目要按字母序 ──────────────
+  #
+  # 【为什么加】构建 35030699233 失败于：
+  #   mozbuild.util.UnsortedError: An attempt was made to add an unsorted sequence
+  #   [./engine/zen/kokoa/moz.build]
+  # 原因：EXTRA_JS_MODULES.zen 里四条顺序不对。
+  #
+  # 【只查 EXTRA_JS_MODULES.zen】—— 这是 mozbuild 要求有序的那类。
+  # 别的列表（XPIDL_SOURCES / EXPORTS / SOURCES ...）不在此列，
+  # 混在一起查会大批误报（我第一版就误报了 4 个文件）。
+  local sbad=0 mf items sorted
+  while IFS= read -r mf; do
+    [ -f "$mf" ] || continue
+    # 只取 EXTRA_JS_MODULES.zen += [ ... ] 那一段
+    items=$(sed -n "/EXTRA_JS_MODULES.zen[[:space:]]*+=/,/]/p" "$mf" 2>/dev/null \
+      | grep -oE "\"[A-Za-z0-9_.-]+\.[a-z]+\"" | tr -d "\"")
+    [ -n "$items" ] || continue
+    sorted=$(printf "%s\n" "$items" | LC_ALL=C sort)
+    if [ "$items" != "$sorted" ]; then
+      sbad=$((sbad+1))
+      bad "$mf 的 EXTRA_JS_MODULES.zen 没按字母序（mozbuild 会报 UnsortedError）"
+      echo "    实际: $(printf "%s " $items)"
+      echo "    应为: $(printf "%s " $sorted)"
+    fi
+  done < <(git ls-files "src/zen/**/moz.build" 2>/dev/null | sort -u)
+  if [ $sbad -eq 0 ]; then ok "EXTRA_JS_MODULES.zen 都已按字母序"; fi
   if [ $bad -eq 0 ]; then ok "moz.build 子目录都已登记在父级 DIRS"; fi
 }
 
