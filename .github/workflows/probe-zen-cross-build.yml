@@ -41,7 +41,39 @@ jobs:
       SURFER_COMPAT: x86_64
       CARGO_INCREMENTAL: "0"
 
+      # 【2026-09-15 加】贴牌：这几个是 Firefox 的 project_flag，
+      # 只能通过【环境变量】或 imply 设置 —— 【不能走 mozconfig 的 export】。
+      #
+      # 实测过的两种失败方式：
+      #   1) mozconfig 里 export MOZ_APP_VENDOR=Kokoa
+      #      -> mach 报 InvalidOptionError: can not be set by mozconfig
+      #         （origin=mozconfig 不在 possible_origins 里）
+      #   2) 在 moz-configure.patch 里给 project_flag 加 default
+      #      -> 无效（有环境变量覆盖了 default）
+      #
+      # 正确方式就是这里（origin=environment 是被接受的来源）。
+      # 依据：python/mozbuild/mozbuild/configure/options.py L435
+      #       configure/__init__.py L691: value.origin not in ("default", "environment")
+      MOZ_APP_VENDOR: Kokoa
+      MOZ_APP_PROFILE: kokoa
+
     steps:
+      - name: ★ 贴牌环境变量 · 诊断（回答「谁设了 MOZ_*」）
+        run: |
+          # 【为什么加这一步】
+          # TASK-09 查出：改 project_flag 的 default 无效，说明【有环境变量在覆盖】。
+          # 但本仓库里搜不到谁设的。这一步把构建环境里的 MOZ_* 全打出来，
+          # 一次性回答那个问题（TASK-09「没查清」的第 1 条）。
+          echo "=== 构建环境里的 MOZ_* / MOZILLA_* ==="
+          env | grep -iE '^(MOZ|MOZILLA)_' | sort || echo "(无)"
+          echo ""
+          echo "=== 我们显式设的两个（应该出现）==="
+          echo "MOZ_APP_VENDOR=${MOZ_APP_VENDOR:-<未设>}"
+          echo "MOZ_APP_PROFILE=${MOZ_APP_PROFILE:-<未设>}"
+          echo ""
+          echo "=== runner 默认可能有的品牌相关变量（排除干扰）==="
+          env | grep -iE 'VENDOR|PROFILE|APP_NAME|BASENAME' | grep -viE 'MOZ_APP_(VENDOR|PROFILE)' || echo "(无)"
+
       - name: 磁盘 · 起点
         run: df -h / | tee /tmp/disk-00.txt
 
