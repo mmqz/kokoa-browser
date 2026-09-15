@@ -145,16 +145,24 @@ check_l10n() {
 # ── 5. 品牌残留（只查我们自己改过的文件）────────────────────────────────
 check_brands() {
   say "=== 品牌残留（只看我们改过的文件）==="
-  local base ours
-  # base-kokoa = 我们孤儿历史的第一个提交（= 上游快照被替换后的状态）
-  # 注意：用它算出的 delta 【不含】README.md 与 docs/overnight-sprint.md 的替换
-  #（那两个在快照根里就已是我们的版本），所以品牌检查只看 src/ 即可。
-  base=$(git tag -l 'base-kokoa' | head -1)
-  ours=""
-  if [ -n "$base" ]; then ours=$(git diff --name-only "$base" HEAD 2>/dev/null); fi
+  # 【2026-09-15 改：不再依赖 delta，改为扫固定产品路径】
+  #
+  # 原来的做法是用 base-kokoa tag 算出「我们改过的文件」再扫。
+  # 但那个语义是错的：我们要保证的是【产品里没有 Zen 品牌】，
+  # 而不是「我们改过的文件里没有」—— 上游文件同样会进产品。
+  #
+  # 实际踩到的例子：prefs/zen/mods.yaml（上游文件，我们没改过）里
+  #   zen.injections.match-urls = "https://zen-browser.app/*"
+  # 它会被合并进 omni.ja 的 defaults/preferences/firefox.js，而且是 locked 的。
+  # 旧的检查扫不到它（不在 delta 里）。
+  #
+  # 所以改为：扫固定的产品路径（src/ locales/ configs/ build/ prefs/ tools/），
+  # 不管它是不是我们改过的。用户明确说过不要碰「我们改过的」文件，
+  # 所以我们【只报告，不修改】—— 交给人工决定。
+  local ours
+  ours=$(git ls-files 'src/*' 'locales/*' 'configs/*' 'build/*' 'prefs/*' 2>/dev/null)
   if [ -z "$ours" ]; then
-    say "  (没有基线 tag，无法算出我们的文件；跳过)"
-    say "  提示: git tag base-zen-<上游SHA前7位> <上游SHA>"
+    say "  (git ls-files 没返回文件；跳过)"
     return
   fi
   # 【只扫会进产品的目录】。docs/ 一律不扫 ——
@@ -177,9 +185,18 @@ check_brands() {
     # 【区分「品牌泄漏」与「必需的署名」】——这两者必须分开，否则检查会逼着人去删许可声明。
     # 带署名语境的行（based on / derived from / thanks to / 版权头 / 上游仓库 URL）是【要留的】：
     # MPL-2.0 与诚实都要求致谢上游。
+    # 【2026-09-15 修两处缺陷】
+    #
+    # 缺陷 1：正则只写了 zen-browser/desktop，漏了 zen-browser.app 这类域名。
+    #   实际踩到：prefs/zen/mods.yaml 的 "https://zen-browser.app/*" 没被抓到。
+    #   -> 改成匹配 zen-browser. 与 zen-browser/ 两种写法。
+    #
+    # 缺陷 2：排除规则里的 https?:// 会把【所有 URL】当署名跳过 —— 太宽。
+    #   而品牌泄漏恰恰常出现在 URL 里（zen-browser.app、share.zen-browser.app）。
+    #   -> 去掉 https?://，只在真正有署名语境词时才跳过。
     local leaked
-    leaked=$(grep -inE 'zen browser|heyzen|zen-browser/desktop' "$f" 2>/dev/null \
-             | grep -viE 'based on|derived from|thanks|credit|licensed|MPL|https?://|upstream|上游|致谢' || true)
+    leaked=$(grep -inE 'zen browser|heyzen|zen-browser[./]|zen\.browser\.app' "$f" 2>/dev/null \
+             | grep -viE 'based on|derived from|thanks|credit|licensed|MPL|upstream|上游|致谢|repos/zen-browser|github\.com/zen-browser|githubusercontent' || true)
     if [ -n "$leaked" ]; then
       bad "$f 里仍有 Zen 品牌字样（非署名语境）"
       printf '%s\n' "$leaked" | head -3 | sed 's/^/         /'
