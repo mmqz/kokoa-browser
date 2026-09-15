@@ -322,6 +322,55 @@ check_patches() {
   if [ $nlbad -eq 0 ]; then ok "所有 patch 文件都以换行结尾"; fi
 }
 
+# ── ★ 2026-09-15 加：jar.mn 里注册的文件必须真实存在 ────────────────────
+#
+# 【为什么加这个检查】当天一次构建（34987949992）跑了 2h39m 后失败：
+#     RuntimeError: File "kokoa-settings.js" not found in
+#       engine/browser/components/preferences/
+#     gmake: browser/components/preferences/misc Error 2
+#
+# 根因：jar.mn 里写 content/browser/preferences/kokoa-settings.js 【没有源路径】，
+#       这种形式 jar.mn 从【自己所在目录】找文件（browser/components/preferences/），
+#       而我把文件放到了 src/zen/kokoa/。
+#
+# 这个错【本地就能查】—— 扫一遍 jar.mn 的 + 行，看文件在不在。
+# 但构建要 3 小时才发现，代价太大。
+check_jarmn() {
+  say "=== jar.mn 注册的文件是否存在 ==="
+  local bad=0
+  # 只看我们改过的 jar.mn patch（上游的不管）
+  local f
+  while IFS= read -r f; do
+    [ -f "$f" ] || continue
+    # patch 的目标文件路径（+++ b/xxx）
+    local target
+    target=$(grep -m1 "^+++ b/" "$f" 2>/dev/null | sed "s|^+++ b/||")
+    [ -n "$target" ] || continue
+    # 目标文件所在目录（在 src/ 下的对应位置）
+    local dir
+    dir="src/$(dirname "$target")"
+    [ -d "$dir" ] || continue
+    # 扫 patch 里的 + 行，找形如 content/xxx/yyy.js 的条目（无源路径的）
+    while IFS= read -r line; do
+      entry=$(echo "$line" | sed -E "s/^\+[[:space:]]+//" | awk "{print \$1}")
+      case "$entry" in
+        content/*) ;;
+        *) continue ;;
+      esac
+      # 该行有没有 (源路径) —— 有的话跳过（那种由源路径决定）
+      if echo "$line" | grep -q "("; then
+        continue
+      fi
+      base=$(basename "$entry")
+      if [ ! -f "$dir/$base" ]; then
+        bad=$((bad+1))
+        bad "  $f 注册了 $entry，但文件不在 $dir/$base"
+      fi
+    done < <(grep "^+" "$f" 2>/dev/null)
+  done < <(git ls-files "src/**/jar*.patch" "src/**/jar.mn" 2>/dev/null | sort -u)
+  if [ $bad -eq 0 ]; then ok "jar.mn 注册的文件都存在"; fi
+}
+
 # ── 7. mozconfig 里的非法变量 ──────────────────────────────────────────
 #   背景：2026-09-15 一次构建在 Build 步失败（11m52s），报：
 #     mozbuild.configure.options.InvalidOptionError:
@@ -358,8 +407,9 @@ case "$MODE" in
   l10n)   check_l10n ;;
   brands) check_brands ;;
   patches) check_patches ;;
+  jarmn)  check_jarmn ;;
   mozconfig) check_mozconfig ;;
-  all)    check_syntax; check_json; check_prefs; check_l10n; check_brands; check_patches; check_mozconfig ;;
+  all)    check_syntax; check_json; check_prefs; check_l10n; check_brands; check_patches; check_jarmn; check_mozconfig ;;
   *)      say "用法: bash scripts/check.sh [syntax|json|prefs|l10n|brands|all]"; exit 2 ;;
 esac
 
