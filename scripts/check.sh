@@ -297,6 +297,29 @@ check_patches() {
     fi
   done < <(git ls-files "src/**/*.patch" 2>/dev/null | sort -u)
   if [ $bad -eq 0 ]; then ok "$n 个 patch 文件 hunk 行数全部自洽"; fi
+
+  # ── ★ 2026-09-15 加：patch 文件必须【以换行结尾】 ────────────────────
+  #
+  # 【为什么加这个检查】当天一次构建（34985728054）在 Import 步失败：
+  #     error: corrupt patch at .../jar-mn.patch:13
+  # 而 hunk 行数【完全正确】—— 问题在【文件末尾没有换行符】。
+  #
+  # git apply 要求 patch 以换行结尾。缺了会报 corrupt patch，
+  # 而且报的行号是【最后一行】，看不出真正原因。
+  #
+  # 上面那段行数检查【抓不到】这种情况 —— 它只数 hunk 内的行，
+  # 不看文件末尾字节。所以这里补一道。
+  local nlbad=0 f2
+  while IFS= read -r f2; do
+    [ -f "$f2" ] || continue
+    # 用 od 取最后一个字节。0a = LF
+    last=$(tail -c 1 "$f2" 2>/dev/null | od -An -tx1 2>/dev/null | tr -d " \n")
+    if [ "$last" != "0a" ]; then
+      nlbad=$((nlbad+1))
+      bad "$f2 末尾没有换行符（git apply 会报 corrupt patch）"
+    fi
+  done < <(git ls-files "src/**/*.patch" 2>/dev/null | sort -u)
+  if [ $nlbad -eq 0 ]; then ok "所有 patch 文件都以换行结尾"; fi
 }
 
 # ── 7. mozconfig 里的非法变量 ──────────────────────────────────────────
