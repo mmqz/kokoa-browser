@@ -244,6 +244,10 @@ jobs:
           echo "打包耗时秒数: $(( $(cat /tmp/pkg-end) - $(cat /tmp/pkg-start) ))"
           echo "=== dist 内容 ==="; ls -la dist 2>/dev/null || echo "(无 dist)"
 
+      - name: ★ 产物贴牌检查（读产物，不是读源码树）
+        if: always()
+        run: bash scripts/check-artifact-branding.sh engine/obj-x86_64-pc-windows-msvc/dist/bin
+
       - name: 上传产物
         if: always()
         uses: actions/upload-artifact@v4
