@@ -16,6 +16,42 @@ git merge-base --is-ancestor <commit> $sha && echo "在构建里" || echo "不�
 
 ---
 
+# 零之二、【产物层面】先查 pref 默认值（实机前就能验）
+
+菜单功能依赖 pref 的【默认值】。默认值来自 `prefs/kokoa/menu.yaml`，
+经 `npm run ffprefs` 编译，最后【内联进 `defaults/preferences/firefox.js`】。
+
+（已验证机制：构建 35047911545 的产物 firefox.js 里有 140 条 zen.* pref，
+说明 dynamic prefs 确实走这条路；当时 kokoa.menu.* 有 0 条，
+因为菜单功能还没进那次构建。）
+
+验证办法（python）：
+```
+import zipfile, re
+zf = zipfile.ZipFile(omni_ja_path)
+t = zf.read('defaults/preferences/firefox.js').decode('utf-8','replace')
+for m in re.finditer(r'pref\(\s*["](kokoa\.menu\.[^"]+)["]\s*,\s*([^)]{0,20})\)', t):
+    print(m.group(1), '=', m.group(2).strip())
+```
+
+预期（菜单功能那次构建 35056127083）：
+```
+kokoa.menu.new-tab.visible     = true
+kokoa.menu.new-window.visible  = true
+kokoa.menu.print.visible       = false    <- 默认隐藏
+kokoa.menu.fxa.visible         = false    <- 默认隐藏
+kokoa.menu.save-file.visible   = false    <- 默认隐藏
+```
+
+**若这里缺项或值不对** -> 是 `prefs/kokoa/menu.yaml` 没被 ffprefs 收进去，
+先别急着实机，回到那一步查。
+
+（ffprefs 是递归扫 `prefs/` 下所有 yaml 的 ——
+见 tools/ffprefs/src/main.rs L139 get_prefs_files_recursively，
+所以新建 `prefs/kokoa/` 子目录【不需要】额外登记。）
+
+---
+
 # 一、AI 工作区（主线功能）
 
 ## 1.1 入口在哪
