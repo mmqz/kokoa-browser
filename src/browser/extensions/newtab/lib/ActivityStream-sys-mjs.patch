@@ -11,3 +11,12 @@ index d88bc01e9a085f2970f4a80bdce94e06d8dcb693..a3dc7795deda5df2a354803a338c63e8
      },
    ],
    [
+@@ -331,7 +331,7 @@ export const PREFS_CONFIG = new Map([
+     "hideLogo",
+     {
+       title: "Hide the Firefox logo on new tab",
+-      value: false,
++      value: true,   // Kokoa: 隐藏新标签页的 logo（原为 false）
+     },
+   ],
+   [
