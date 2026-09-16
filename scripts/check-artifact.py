@@ -118,6 +118,32 @@ if asx:
     v = m.group(1) if m else '?'
     chk('新标签页 hideLogo = true', v == 'true', '实际 ' + v)
 
+# 6. AI 侧栏（kokoa-ai-sidebar，TASK-04 MVP）
+#    CSS/文案走 jar.mn 直接进包；DOM 骨架经 browser-box.inc.xhtml
+#    预处理展开进 browser.xhtml（include 在 html:sidebar-main 内）。
+css_hit = [n for n in names if n.endswith('zen-styles/kokoa-ai-sidebar.css')]
+chk('AI 侧栏 css 进包', css_hit, css_hit[0] if css_hit else '缺 zen-styles/kokoa-ai-sidebar.css')
+
+ftl_hit = [n for n in names if 'kokoa-ai-sidebar.ftl' in n]
+chk('AI 侧栏文案进包', ftl_hit, ftl_hit[0] if ftl_hit else '缺 kokoa-ai-sidebar.ftl')
+
+bx = [n for n in names if n.endswith('browser.xhtml')]
+if bx:
+    t = z.read(bx[0]).decode('utf-8','replace')
+    has_ours = 'kokoa-ai-sidebar' in t
+    has_zen = 'zen-appcontent-wrapper' in t
+    if has_ours:
+        chk('AI 侧栏挂载进 browser.xhtml（在 sidebar-main 内展开）', True,
+            'zen 标记' + ('同在' if has_zen else '异常缺失'))
+    elif has_zen:
+        chk('AI 侧栏挂载进 browser.xhtml（在 sidebar-main 内展开）', False,
+            'browser.xhtml 有 zen 标记但无 kokoa-ai-sidebar —— include 未生效')
+    else:
+        chk('AI 侧栏挂载进 browser.xhtml（在 sidebar-main 内展开）', False,
+            'browser.xhtml 连 zen-appcontent-wrapper 都没有 —— 形态与预期不符，先查这个')
+else:
+    chk('AI 侧栏挂载进 browser.xhtml（在 sidebar-main 内展开）', False, '产物里没有 browser.xhtml')
+
 # 输出
 npass = sum(1 for r in results if r[0])
 nfail = len(results) - npass
