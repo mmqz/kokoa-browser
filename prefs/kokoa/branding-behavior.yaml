@@ -32,3 +32,16 @@
 # 「固定到任务栏」的提示不弹
 - name: browser.shell.pinToTaskbar
   value: false
+
+# 【2026-09-16 实机验收后加】关于页的「检查更新」按钮。#
+# 用户报「检查更新失败」—— 原因：app.update.url.* 指向我们的 GitHub 仓库，
+# 那里没有真实的更新清单（update.xml）。
+#
+# Kokoa 还没做发布流水线，所以「检查更新」现在没有意义。
+# 关掉它，避免用户点了报错。等有了更新服务器再打开。
+- name: app.update.enabled
+  value: false
+
+# 也不要在后台检查
+- name: app.update.auto
+  value: false

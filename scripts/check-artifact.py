@@ -65,6 +65,9 @@ if ff in names:
         'browser.shell.setDefaultGuidanceNotifications': 'false',
         'browser.shell.skipDefaultBrowserCheckOnFirstRun': 'true',
         'browser.shell.pinToTaskbar': 'false',
+        # 【2026-09-16】还没做发布流水线，「检查更新」会报错，先关掉
+        'app.update.enabled': 'false',
+        'app.update.auto': 'false',
     }
     for k, v in expect.items():
         got = prefs.get(k)
