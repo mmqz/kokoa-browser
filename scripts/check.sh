@@ -219,10 +219,17 @@ check_brands() {
     #   -> 字符类改成 [./\\-]（含反斜杠与连字符），覆盖所有写法。
     #
     #   这个漏洞让检查长期处于【假 OK】状态 —— 必须记一笔。
+    # 【2026-09-16 加】第四类例外：真实存在的【上游 CDN 域名】。
+    #   src/zen/mods/ZenMods.mjs 的模组下载地址：
+    #     https://zen-browser.github.io/theme-store/themes/<id>/theme.json
+    #   这【不是】品牌泄漏 —— 是真实可用的商店 CDN（实测 200，
+    #   themes.json 有 77 个模组）；改了模组功能就没了。
+    #   例外要【精确】（上面缺陷 2 的教训：排除规则太宽）。
     local leaked
     leaked=$(grep -inE 'zen browser|heyzen|zen-browser[./\\-]|zen\.browser\.app' "$f" 2>/dev/null \
              | grep -viE 'based on|derived from|thanks|credit|licensed|MPL|upstream|上游|致谢|repos/zen-browser|github\.com/zen-browser|githubusercontent' \
-             | grep -viE 'zen-browser-[a-z-]+|zen-browser\.(ui|container|generic)' || true)
+             | grep -viE 'zen-browser-[a-z-]+|zen-browser\.(ui|container|generic)' \
+             | grep -viE 'zen-browser\.github\.io/theme-store' || true)
     if [ -n "$leaked" ]; then
       bad "$f 里仍有 Zen 品牌字样（非署名语境）"
       printf '%s\n' "$leaked" | head -3 | sed 's/^/         /'

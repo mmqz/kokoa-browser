@@ -36,11 +36,14 @@ export default function checkForZenUpdates() {
         special: true,
         icon: "chrome://browser/skin/zen-icons/sparkles.svg",
       },
-      {
-        url: "https://github.com/tomjiu/kokoa-browser",
-        l10nId: "zen-sidebar-notification-donate",
-        icon: "chrome://browser/skin/zen-icons/heart-circle-fill.svg",
-      },
+      // 【2026-09-16 移除】这里原本是 Zen 的「捐赠」按钮（l10n 文案是
+      //   "Support { -brand-short-name }" -> "Support Kokoa"）。
+      // 但贴牌时 URL 被改成了我们的【代码仓库】——
+      // 用户点「捐赠」却到了代码库，是错的。
+      //
+      // Kokoa 还没有捐赠页，所以【移除】这个按钮，
+      // 而不是指向一个不相干的地方。
+      // （以后有了捐赠/赞助页，在这里加回来即可。）
       {
         action: () => {
           Services.obs.notifyObservers(window, "restart-in-safe-mode");

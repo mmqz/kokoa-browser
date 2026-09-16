@@ -319,8 +319,18 @@ class nsZenMods extends nsZenPreloadedFeature {
   }
 
   #composeModApiUrl(modId) {
-    // keeping theme here as it would require changes to CI to change the name
-    return `https://github.com/tomjiu/kokoa-browser/themes/${modId}/theme.json`;
+    // 【2026-09-16 修】这里原本被贴牌改成了
+    //   https://github.com/tomjiu/kokoa-browser/themes/<id>/theme.json
+    // 但我们的仓库【没有】 themes/ 目录 —— 那个地址是 404。
+    // 后果：「Zen 模组」页面列表项【有壳没内容】（取不到模组信息）。
+    //
+    // 改回 Zen 的真实商店 CDN（实测可用）：
+    //   https://zen-browser.github.io/theme-store/  -> 200
+    //   themes.json -> 几百个模组，每个都有 name
+    //
+    // 说明：目前用的是 Zen 的模组库（都是为 Zen 设计的 CSS）。
+    // 以后要做自己的商店，把下面这行换掉即可。
+    return `https://zen-browser.github.io/theme-store/themes/${modId}/theme.json`;
   }
 
   async #downloadUrlToFile(url, path, maxRetries = 3, retryDelayMs = 500) {
