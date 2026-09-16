@@ -108,3 +108,23 @@ bash scripts/check.sh tests    # 9 个测试文件，秒级
 `docs/` 下 49 份文档是【不同时期】写的，**有些已过期**。
 以 `README.md` 和 `docs/remaining-to-done.md` 为准（这两份最后更新过）。
 若发现某份文档与实际不符，**更新它**，别照着做。
+
+---
+
+# 八、云端接手结果（2026-09-16 追加）
+
+按本文档第三节执行完毕：
+
+```
+· 构建 35056127083 = success（1h44m，headSha=de4a478）
+· 四个待验改动（0487ff1 / 1fa8bc5 / 04f1189 / 59fc304）均确认在构建里
+· check-artifact.py        17/17 全绿
+· verify-artifact-modules  148/148 全过（9 个文件，跑的是产物里的模块）
+· 详见 docs/build-35056127083-verified.md
+```
+
+**代码层验证完毕。** 剩下【实机点一遍】（第三节"若 2/3 全绿"分支），
+照 `docs/manual-test-checklist.md` 执行 —— 只有人能做。
+
+新坑一条：REST API 下载产物是双层 zip，脚本会报「找不到 omni.ja」，
+先解开外层再跑（`builds/` 已进 .gitignore）。
