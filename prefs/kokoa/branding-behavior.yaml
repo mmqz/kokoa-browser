@@ -4,24 +4,21 @@
 
 # Kokoa —— 首次运行 / 默认浏览器 / 任务栏的行为。
 #
-# 【为什么有这份文件】（2026-09-16 实机验收后加）
-#   用户要求: 「将 Kokoa 设为默认浏览器并固定到任务栏，方便随手开启。
-#             固定任务栏的提示，这个保持默认关闭不要弹出」
-#
-#   所以:
-#     · 关掉「设为默认浏览器」的弹窗与主动引导
-#     · 关掉固定到任务栏的提示
-#     · 保留用户【自己手动】设默认的能力（不阻断，只是不打扰）
+# 【2026-09-16 实机验收后加】
+#   用户要求：「将 Kokoa 设为默认浏览器并固定到任务栏」的弹窗
+#             「保持默认关闭不要弹出」
 
-# 首次运行时不再弹「设为默认浏览器」
+# ── 一、关掉「设为默认浏览器」的弹窗与引导 ─────────────────────
+
+# 首次运行不再检查默认浏览器
 - name: browser.shell.checkDefaultBrowser
   value: false
 
-# 不做「设为默认」的主动引导（那个会改系统设置）
+# 不主动去改系统设置
 - name: browser.shell.setDefaultBrowserUserChoice
   value: false
 
-# 关掉「设为默认」的提示条 / 通知
+# 关掉「设为默认」的后续引导通知
 - name: browser.shell.setDefaultGuidanceNotifications
   value: false
 
@@ -33,15 +30,35 @@
 - name: browser.shell.pinToTaskbar
   value: false
 
-# 【2026-09-16 实机验收后加】关于页的「检查更新」按钮。#
-# 用户报「检查更新失败」—— 原因：app.update.url.* 指向我们的 GitHub 仓库，
-# 那里没有真实的更新清单（update.xml）。
+# ── 二、★ 关掉「推荐消息」总开关（这条最彻底）────────────────
 #
-# Kokoa 还没做发布流水线，所以「检查更新」现在没有意义。
-# 关掉它，避免用户点了报错。等有了更新服务器再打开。
+# 【为什么还需要它】
+#   checkDefaultBrowser = false 只是那个弹窗的【必要条件之一】。
+#   完整条件（OnboardingMessageProvider.sys.mjs 的 INFOBAR_DEFAULT_AND_PIN_87）：
+#     firefoxVersion >= 138 && source == "startup" && !isDefaultBrowser
+#     && !checkDefaultBrowser
+#     && (现在 - userDisabledDefaultCheck) >= 7 天     <- 每周会再问一次
+#     && profile 创建 >= 5 周 && profile < 15 周
+#     && ● ...asrouter.userprefs.cfr.features ●          <- 就是这个开关
+#     ...
+#
+#   把它设成 false，所有「推荐消息」都不弹 —— 包括：
+#     · Make Kokoa your primary browser?（设为默认 + 固定任务栏）
+#     · 各种 CFR / 推广消息
+#
+#   实测：该 pref 的 targeting 出现在 9 个文件、19 处。
+- name: browser.newtabpage.activity-stream.asrouter.userprefs.cfr.features
+  value: false
+
+- name: browser.newtabpage.activity-stream.asrouter.userprefs.cfr.addons
+  value: false
+
+# ── 三、更新检查（Kokoa 还没有更新服务器）────────────────────
+#
+# app.update.url.* 指向我们的 GitHub 仓库，那里没有 update.xml，
+# 所以「检查更新」必然失败。等有了发布流水线再打开。
 - name: app.update.enabled
   value: false
 
-# 也不要在后台检查
 - name: app.update.auto
   value: false

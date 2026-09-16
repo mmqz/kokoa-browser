@@ -68,6 +68,10 @@ if ff in names:
         # 【2026-09-16】还没做发布流水线，「检查更新」会报错，先关掉
         'app.update.enabled': 'false',
         'app.update.auto': 'false',
+        # 【2026-09-16】★ 关掉「设为默认浏览器 / 固定任务栏」弹窗的总开关
+        # （checkDefaultBrowser 只是必要条件之一；这条才是彻底的）
+        'browser.newtabpage.activity-stream.asrouter.userprefs.cfr.features': 'false',
+        'browser.newtabpage.activity-stream.asrouter.userprefs.cfr.addons': 'false',
     }
     for k, v in expect.items():
         got = prefs.get(k)
