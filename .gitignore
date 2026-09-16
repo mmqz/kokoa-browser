@@ -35,3 +35,6 @@ build/signing/private_key.pem
 build/signing/private_key.p12
 
 bloat-dump.log
+
+# 本地产物核对目录（gh run download / API 下载的构建产物放这里，见 HANDOFF.md 第三节）
+builds/
