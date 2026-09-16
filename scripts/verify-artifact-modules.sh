@@ -72,6 +72,23 @@ for t in "$OUT"/*.test.js; do
     echo "  跳过 $name（依赖的模块不在本次产物里）"
     continue
   fi
+
+  # 【★ 特殊】一致性测试查的是【源码树】里的文件（设置页 / prefs yaml），
+  # 与产物无关 —— 而且它靠 ../../.. 推仓库根，复制到产物目录后路径就错了。
+  # 所以在仓库原位置跑它，不复制。
+  if [[ "$name" == "KokoaMenuConsistency.test.js" ]]; then
+    if out=$(cd "$SRC" && node "$name" 2>&1); then
+      n=$(echo "$out" | grep -o "[0-9]* 通过" | head -1 | grep -o "[0-9]*")
+      total=$((total + ${n:-0}))
+      echo "  OK   $name（${n:-?} 用例，在源码树跑 —— 与本产物无关）"
+    else
+      echo "  FAIL $name（在源码树跑）"
+      echo "$out" | tail -5 | sed "s/^/       /"
+      fail=$((fail + 1))
+    fi
+    continue
+  fi
+
   if out=$(cd "$OUT" && node "$name" 2>&1); then
     n=$(echo "$out" | grep -o "[0-9]* 通过" | head -1 | grep -o "[0-9]*")
     total=$((total + ${n:-0}))
