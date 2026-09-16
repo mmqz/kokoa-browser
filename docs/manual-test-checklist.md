@@ -1,0 +1,116 @@
+# 实机测试清单（构建出来后照这个点）
+
+> 单测覆盖了 94 个用例，但以下这些**测不了**（要真进程 / 真 UI）。
+> 构建产物出来后，照这份清单逐条点，记录结果。
+
+---
+
+# 零、前提：先确认这次构建【包含】要验的改动
+
+```bash
+sha=$(gh api repos/tomjiu/kokoa-browser/actions/runs/<id> --jq '.head_sha')
+git merge-base --is-ancestor <commit> $sha && echo "在构建里" || echo "不在"
+```
+
+**不要跳过这步** —— 我上次的教训（`docs/artifact-verification.md`）。
+
+---
+
+# 一、AI 工作区（主线功能）
+
+## 1.1 入口在哪
+左侧边栏【顶部】有两个按钮（`ZenCustomizableUI.sys.mjs` L84/L92）：
+- 「AI 工作区」（`cmd_kokoaOpenAiWorkspace`）
+- 「与网页并排」（`cmd_kokoaToggleAiSplit`）
+
+## 1.2 点「AI 工作区」
+```
+预期：
+  □ 若 dsh 没在跑 -> 自动拉起（dsh web --no-open）
+  □ 打开一个标签页，URL 是 http://127.0.0.1:3080/ 且【带 token】
+  □ 页面显示 dsh 界面（不是 "web authentication required"）
+
+若失败，看控制台：
+  · "[Kokoa/sidecar] 找不到 dsh 或 node"  -> Node/dsh 没装或不在标准位置
+  · "web authentication required"         -> URL 缺 token（getPanelUrl 兜底了）
+  · 标签没打开                              -> 看 [Kokoa] 前缀的错误
+```
+
+## 1.3 点第二次「AI 工作区」
+```
+预期：□ 【复用】已打开的那个标签，不再新开一个
+（这是从主线移植来的改进 —— 原实现每次都 addTab）
+```
+
+## 1.4 点「与网页并排」
+```
+预期：□ AI 面板与当前网页【左右并排】（AI 在右侧）
+若失败，看 reason：
+  · "Zen 分屏不可用"        -> gZenViewSplitter 没加载
+  · "当前选中的就是 AI 面板" -> 先切到别的网页再点
+  · "splitTabs 调用了但分屏没激活" -> 底层拒了（参数不合法会静默 return）
+```
+
+## 1.5 设置页的状态显示
+```
+设置 -> Kokoa -> AI 工作区 那节
+预期：□ "dsh 状态" 那行显示 running/stopped（不是一直"正在检查"）
+```
+
+---
+
+# 二、菜单（本轮新做的）
+
+## 2.1 点右上角三条杠
+```
+预期：□ 【打印】不在菜单里
+      □ 【登录 Firefox】不在菜单里
+      □ 【保存页面为…】不在菜单里
+      □ 新建标签页 / 新建窗口 仍在
+```
+
+## 2.2 打开开关
+```
+设置 -> Kokoa -> 菜单
+预期：□ 勾选「打印」后，菜单里【立刻】出现打印
+      □ 取消勾选后消失
+```
+
+## 2.3 ★ 功能还在（不是砍掉）
+```
+预期：□ Ctrl+P 仍能打印（隐藏的是入口，不是能力）
+      □ 同步功能仍能工作
+（这符合产品原则 —— 见 workitem-menubar-configurable.md 第 24 节）
+```
+
+---
+
+# 三、贴牌（前几轮做的，顺带确认）
+
+```
+□ 关于对话框显示 "Kokoa Browser"（不是 Zen）
+□ 欢迎页【没有】大标题 slogan（本轮构建验证）
+□ 新标签页【没有】Zen logo（本轮构建验证）
+```
+
+---
+
+# 四、怎么记录
+
+每条目打勾或写「失败 + 控制台原文」。
+**失败时不要猜** —— 把 `[Kokoa` 开头的日志原样贴出来。
+
+---
+
+# 五、如果 AI 工作区打不开 —— 排查顺序
+
+```
+1. Node 装了吗？            node --version
+2. dsh 装了吗？             npm ls -g @deepseek-ai/dsh
+3. 环境变量注入了吗？       KOKOA_DSH_URL / KOKOA_STATE_DIR
+   （没注入就走兜底 http://127.0.0.1:3080/，可能缺 token）
+4. 控制台有没有 [Kokoa/sidecar] 的日志
+5. dsh 能不能手动跑起来？   dsh web --no-open --port 3080
+```
+
+**第 5 步最关键** —— 如果手动都起不来，问题不在我们这边。
