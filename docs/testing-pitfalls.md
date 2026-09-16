@@ -124,6 +124,33 @@ gZenWorkspaces          // 使用（L53/L119/L134/L158）裸标识符
 
 ---
 
+# 十、★ 判断能不能测之前，先【核实依赖】（我错了三次）
+
+**我至少三次凭印象说「这个依赖浏览器 API，Node 测不了」，然后核实后发现能测。**
+
+| 我说的 | 实际 |
+|---|---|
+| `KokoaAiPanel` 行为测不了 | ✅ 能测 —— 浏览器 API 在函数体内，`win` 是参数 |
+| `applyMenuVisibility` 测不了 | ✅ 能测 —— 只依赖 Services/PanelMultiView/document 三个全局 |
+| `findNode`/`findDsh` 要真进程 | ✅ 能测 —— 依赖 Subprocess.pathSearch/IOUtils/Services.dirsvc，全是全局 |
+
+**判断能不能测的正确步骤**（别跳过第 1 步）:
+
+```
+1. 看依赖在哪:
+   · 模块【顶层】就碰浏览器 API  -> Node import 就炸，确实难测
+   · 在【函数体内】使用         -> 可以测（这是我们的情况）
+2. 看是【参数】还是【全局】:
+   · win / aiTab 是参数         -> 直接传假对象
+   · Services / window 是全局   -> globalThis.xxx = 假的
+3. 写之前先注入试一次 —— 别停在"应该不行"
+```
+
+**真正测不了的只有**:真 spawn 进程(`Subprocess.call`)、真的 UI 渲染。
+其余几乎都能注入。
+
+---
+
 # 十、最贵的一条：拿旧产物找新代码
 
 我核对产物时说「三项没生效」，其实：
