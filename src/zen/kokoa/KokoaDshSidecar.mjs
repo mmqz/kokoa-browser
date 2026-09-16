@@ -54,6 +54,24 @@
 
 const DEFAULT_PORT = 18318;
 
+// ── 【导出的正则】让测试能测【真的那个】，而不是复制一份 ─────────────────
+//
+// 【为什么导出】2026-09-16：我的第一版测试【复制】了这个正则，
+// 结果模块改了、测试没改 —— 测的根本不是真代码。
+// （我故意改坏模块里的正则，测试居然还通过，才发现这个漏洞。）
+//
+// 修法：模块导出正则，测试 import 它。这样模块改正则，测试自动跟着测新的。
+//
+// 注意：这两个常量在【顶层】但只是字面量，不依赖任何浏览器 API ——
+//       所以 Node 可以直接 import 本模块（用于跑测试）。
+
+/** 主匹配：要求【行尾】—— 因为 stdout 是管道，可能分块到达；
+ *  半截 URL 会被误判（2026-09-15 用真实样本实测过）。 */
+export const RE_DSH_URL_LINE = /dsh web:\s*(\S+)\s*\n/;
+
+/** 流结束的兜底：允许 URL 后直接是结尾（万一 dsh 输出完就关流、末尾没换行）。 */
+export const RE_DSH_URL_END = /dsh web:\s*(\S+)\s*$/;
+
 /** 已拉起的 sidecar 状态 */
 const state = {
   proc: null,
@@ -228,12 +246,29 @@ export function startDsh() {
             }
             buf += new TextDecoder().decode(value);
             // 输出格式：dsh web: http://127.0.0.1:PORT/?token=XXX
-            const m = buf.match(/dsh web:\s*(\S+)/);
+            const m = buf.match(RE_DSH_URL_LINE);
             if (m) {
               clearTimeout(timer);
               resolve(m[1]);
               return;
             }
+          }
+
+          // 【★ 流结束时的兜底 —— 必须放在【循环外】】
+          //
+          // 【2026-09-16 修的第二个缺陷】
+          // 我第一版把这个兜底【放进了 while 循环里】，
+          // 结果它把主匹配的保护【废掉了】：
+          //   /dsh web:\s*(\S+)\s*$/ 对"分块前半段"也匹配
+          //   （因为那段的结尾就是当前缓冲的结尾）。
+          //   实测："dsh web: http://127.0.0.1:18" 匹配出了半截 URL。
+          //
+          // 正确做法：兜底【只在流真的结束时】用 —— 就是这里。
+          const mEnd = buf.match(RE_DSH_URL_END);
+          if (mEnd) {
+            clearTimeout(timer);
+            resolve(mEnd[1]);
+            return;
           }
         } catch (e) {
           logline("读 stdout 出错: " + e);

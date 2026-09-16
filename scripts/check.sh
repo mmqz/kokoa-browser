@@ -237,6 +237,38 @@ check_brands() {
 #     error: corrupt patch at src/browser/installer/windows/nsis/defines-nsi-in.patch
 #   根因：手写 patch 时 hunk 头写了 @@ -25,7 +25,7 @@，但实际只有 6 行。
 #   git apply 会直接拒绝。这个错误【本来可以秒级查出来】——不用浪费一次 3 小时构建。
+# ── ★ 2026-09-16 加：跑 Kokoa 模块的自带测试 ────────────────────────────
+#
+# 【为什么加】2026-09-15 我用真实样本测 KokoaDshSidecar 的正则时，
+# 连着发现两个【真实缺陷】：
+#   1. 原正则在 stdout 分块到达时匹配出【半截 URL】
+#   2. 我的兜底放错位置，把第 1 条的保护废掉了
+#
+#   两个都只有【跑真实数据】才暴露 —— 语法检查和格式检查都看不出来。
+#
+# 所以把模块自带的 .test.js 接进检查里。
+# 约定：src/zen/kokoa/*.test.js 是零依赖的 node 脚本，退出码非 0 即失败。
+check_kokoa_tests() {
+  say "=== Kokoa 模块测试 ==="
+  local ran=0 failed=0 t
+  while IFS= read -r t; do
+    [ -f "$t" ] || continue
+    ran=$((ran+1))
+    if out=$(node "$t" 2>&1); then
+      ok "$(basename "$t") 通过"
+    else
+      failed=$((failed+1))
+      bad "$(basename "$t") 失败"
+      printf "%s\n" "$out" | tail -12 | sed "s/^/      /"
+    fi
+  done < <(git ls-files "src/zen/kokoa/*.test.js" 2>/dev/null)
+  if [ $ran -eq 0 ]; then
+    say "  (没有测试文件)"
+  elif [ $failed -eq 0 ]; then
+    ok "$ran 个测试文件全部通过"
+  fi
+}
+
 check_patches() {
   say "=== patch 文件自洽性 ==="
   local n=0 bad=0
@@ -474,10 +506,11 @@ case "$MODE" in
   l10n)   check_l10n ;;
   brands) check_brands ;;
   patches) check_patches ;;
+  tests)  check_kokoa_tests ;;
   jarmn)  check_jarmn ;;
   mozbuild) check_mozbuild_dirs ;;
   mozconfig) check_mozconfig ;;
-  all)    check_syntax; check_json; check_prefs; check_l10n; check_brands; check_patches; check_jarmn; check_mozbuild_dirs; check_mozconfig ;;
+  all)    check_syntax; check_json; check_prefs; check_l10n; check_brands; check_patches; check_kokoa_tests; check_jarmn; check_mozbuild_dirs; check_mozconfig ;;
   *)      say "用法: bash scripts/check.sh [syntax|json|prefs|l10n|brands|all]"; exit 2 ;;
 esac
 
