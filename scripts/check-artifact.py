@@ -49,9 +49,11 @@ for m in mods:
 ff = 'defaults/preferences/firefox.js'
 if ff in names:
     t = z.read(ff).decode('utf-8','replace')
-    # 收两个前缀：kokoa.menu.*（菜单）与 browser.shell.*（首次运行/默认浏览器）
+    # 收【全部】pref("k", v)，后行覆盖前行 —— 与 Firefox pref 引擎语义一致。
+    # 之前只收 kokoa.menu|browser.shell 两个前缀，app.update.* / asrouter.*
+    # 加进 expect 后没扩正则，导致 4 项假 FAIL（构建 35113050289 核对时发现）。
     prefs = {}
-    for _m in re.finditer(r'pref\(\s*"((?:kokoa\.menu|browser\.shell)\.[^"]+)"\s*,\s*([^)]{0,24})\)', t):
+    for _m in re.finditer(r'pref\(\s*"([^"]+)"\s*,\s*([^)]{0,24})\)', t):
         prefs[_m.group(1)] = _m.group(2).strip()
     expect = {
         'kokoa.menu.new-tab.visible': 'true',
