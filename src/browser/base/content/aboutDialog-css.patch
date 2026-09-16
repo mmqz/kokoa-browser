@@ -1,8 +1,32 @@
 diff --git a/browser/base/content/aboutDialog.css b/browser/base/content/aboutDialog.css
-index 017125bc2510e5f5e317a5e78c40d6aa9ded76ca..d343d8c62a2251e3c3a33ae8f2ab9c4c68218c22 100644
+index 017125bc2510e5f5e317a5e78c40d6aa9ded76ca..243535d19c72ac122395092b76d72d162c003a28 100644
 --- a/browser/base/content/aboutDialog.css
 +++ b/browser/base/content/aboutDialog.css
-@@ -135,6 +135,13 @@
+@@ -17,7 +17,10 @@
+ }
+ 
+ #leftBox {
+-  background-image: image-set(url("chrome://branding/content/about-logo.png"), url("chrome://branding/content/about-logo@2x.png") 2x);
++  /* 【2026-09-16 去掉 logo】用户要求「不要应用内部的 logo」。
++     这里是「关于」对话框左侧的圆形 logo。
++     置为 none —— 但【保留 min-width/min-height】，避免布局塌陷。 */
++  background-image: none;
+   background-repeat: no-repeat;
+   background-size: 192px auto;
+   background-position: center 40px;
+@@ -30,7 +33,10 @@
+ }
+ 
+ #rightBox {
+-  background-image: url("chrome://branding/content/about-wordmark.svg");
++  /* 【2026-09-16 去掉字标】用户要求「不要应用内部的 logo」。
++     这是「关于」对话框右侧的 Firefox 字标（about-wordmark.svg）。
++     左侧的圆形 logo 已在上面去掉（#leftBox）。 */
++  background-image: none;
+   background-repeat: no-repeat;
+   background-size: 288px auto;
+   -moz-context-properties: fill;
+@@ -135,6 +141,13 @@
    margin: 0 40px;
  }
  
@@ -16,21 +40,3 @@ index 017125bc2510e5f5e317a5e78c40d6aa9ded76ca..d343d8c62a2251e3c3a33ae8f2ab9c4c
  #currentChannel {
    margin: 0;
    padding: 0;
-
-@@ -19,3 +19,6 @@
- #leftBox {
--  background-image: image-set(url("chrome://branding/content/about-logo.png"), url("chrome://branding/content/about-logo@2x.png") 2x);
-+  /* 【2026-09-16 去掉 logo】用户要求「不要应用内部的 logo」。
-+     这里是「关于」对话框左侧的圆形 logo。
-+     置为 none —— 但【保留 min-width/min-height】，避免布局塔陷。 */
-+  background-image: none;
-   background-repeat: no-repeat;
-
-@@ -32,3 +35,6 @@
- #rightBox {
--  background-image: url("chrome://branding/content/about-wordmark.svg");
-+  /* 【2026-09-16 去掉字标】用户要求「不要应用内部的 logo」。
-+     这是「关于」对话框右侧的 Firefox 字标（about-wordmark.svg）。
-+     左侧的圆形 logo 已在上面去掉（#leftBox）。 */
-+  background-image: none;
-   background-repeat: no-repeat;
