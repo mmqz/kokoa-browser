@@ -775,26 +775,22 @@
   }
 
   async function animateInitialStage() {
-    const [title1, title2] = await document.l10n.formatValues([
-      { id: "zen-welcome-title-line1" },
-      { id: "zen-welcome-title-line2" },
-    ]);
+    // 【Kokoa 2026-09-15】删掉欢迎页的大标题（原 Zen 的 slogan）。
+    //
+    // 原来这里渲染两条 l10n 文案（"Welcome to" / "a calmer internet"），
+    // 用 5.2rem 的字号做逐字符动画 —— 那是 Zen 的品牌 slogan，
+    // 产品名只有 Kokoa，不需要这个。
+    //
+    // 【为什么不只是删 l10n 键】
+    //   formatValues 对不存在的 id 返回 null，
+    //   而下面 `for (const char of line)` 遇到 null 会抛 TypeError。
+    //   所以这里把整段渲染去掉，而不是只删文案。
+    //
+    // 【保留什么】只留一个空操作 —— 因为 title1/title2 不再被用。
     const titleElement = document.getElementById("zen-welcome-title");
-    for (const line of [title1, title2]) {
-      const lineElement = document.createElement("span");
-      for (const char of line) {
-        if (char === " ") {
-          lineElement.append(" ");
-          continue;
-        }
-        const charElement = document.createElement("span");
-        charElement.className = "zen-welcome-char";
-        charElement.textContent = char;
-        lineElement.appendChild(charElement);
-      }
-      titleElement.appendChild(lineElement);
-    }
-    const chars = titleElement.querySelectorAll(".zen-welcome-char");
+    const chars = titleElement
+      ? titleElement.querySelectorAll(".zen-welcome-char")
+      : [];
     await animate(
       chars,
       { opacity: [0, 1], y: [50, 0] },
