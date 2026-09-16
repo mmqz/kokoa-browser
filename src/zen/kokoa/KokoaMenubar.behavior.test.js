@@ -34,7 +34,21 @@ globalThis.Services = {
   },
 };
 
-globalThis.document = { _tag: "fake-document" };
+// 【模拟真实环境】菜单项在 <html:template id="appMenu-viewCache"> 的 .content 里，
+// 【不在】 document 上 —— 这是实机踩到的坑。
+// templateNodes 模拟模板内容；只有【手动实例化】时才会出现在 nodes（已实例化）里。
+let templateNodes = {};
+let tplContent = null;
+
+globalThis.document = {
+  _tag: "fake-document",
+  getElementById(id) {
+    if (id === "appMenu-viewCache") {
+      return tplContent ? { content: tplContent } : null;
+    }
+    return null;
+  },
+};
 globalThis.PanelMultiView = {
   getViewNode(doc, id) {
     if (!nodes[id]) { nodes[id] = makeNode(id); }
@@ -62,9 +76,22 @@ function ok(name, cond, extra) {
   else { fail++; console.log("  FAIL " + name + (extra ? "  -> " + extra : "")); }
 }
 
+/** 造一个「模板里」的节点集合 */
+function makeTemplate(nodesMap) {
+  return {
+    querySelectorAll(sel) {
+      const id = sel.replace(/^#/, "");
+      if (!nodesMap[id]) { nodesMap[id] = makeNode(id); }
+      return [nodesMap[id]];
+    },
+  };
+}
+
 function reset() {
   prefValues = {};
   nodes = {};
+  templateNodes = {};
+  tplContent = makeTemplate(templateNodes);
 }
 
 console.log("=== 一、默认（prefs 没设任何值）===");
@@ -74,7 +101,7 @@ reset();
 {
   const n = applyMenuVisibility();
   // 默认隐藏三项：print / fxa(3个id) / save-file = 5 个节点
-  ok("1.1 默认隐藏了 5 个节点（print 1 + fxa 3 + save-file 1）", n === 5, "实际 " + n);
+  ok("1.1 ★ 默认隐藏 10 处 = document 5 + 模板 5", n === 10, "实际 " + n);
 
   ok("1.2 ★ 打印被隐藏", nodes["appMenu-print-button2"].hasAttribute("hidden"));
   ok("1.3 ★ 登录 Firefox 三兄弟被隐藏",
@@ -98,7 +125,7 @@ prefValues["kokoa.menu.print.visible"] = true;
 {
   const n = applyMenuVisibility();
   ok("2.1 ★ 打印打开了 -> 不再隐藏", !nodes["appMenu-print-button2"].hasAttribute("hidden"));
-  ok("2.2 隐藏数减到 4", n === 4, "实际 " + n);
+  ok("2.2 隐藏数减到 8（两处各 4）", n === 8, "实际 " + n);
   ok("2.3 登录 Firefox 仍然隐藏（没被影响）",
      nodes["appMenu-fxa-status2"].hasAttribute("hidden"));
 }
@@ -152,14 +179,48 @@ reset();
 }
 
 console.log("");
-console.log("=== 五、契约一致性（实现与契约表对得上）===");
+console.log("=== 五、★ 元素只在【模板】里（实机真实场景）===");
+console.log("");
+
+// ★ 这一节是【实机踩坑后补的】：
+//   真实环境里菜单项在 appMenu-viewCache 模板里，document 上没有。
+//   我第一次实机验收就是因为只查了 document -> 全部静默跳过 -> 菜单照常显示。
+reset();
+{
+  // 把已实例化的全部清掉，模拟「菜单从没打开过」
+  nodes = {};
+  const n = applyMenuVisibility();
+
+  ok("5.1 ★ 菜单从未打开时，仍然隐藏了（走模板那条路）",
+     n >= 5, "隐藏数=" + n);
+  ok("5.2 ★ 模板里的打印被隐藏",
+     !!(templateNodes['appMenu-print-button2'] &&
+         templateNodes['appMenu-print-button2'].hasAttribute('hidden')));
+  ok("5.3 ★ 模板里的登录三兄弟被隐藏",
+     ['appMenu-fxa-status2','appMenu-fxa-label2','appMenu-fxa-text']
+       .every(id => templateNodes[id] && templateNodes[id].hasAttribute('hidden')));
+  ok("5.4 模板里新建标签页【不】隐藏",
+     !(templateNodes['appMenu-new-tab-button2'] &&
+       templateNodes['appMenu-new-tab-button2'].hasAttribute('hidden')));
+}
+
+// ★ 没有模板时（旧行为）也不能崩
+reset();
+{
+  tplContent = null;   // 拿不到模板
+  const n = applyMenuVisibility();
+  ok("5.5 拿不到模板时不崩（已实例化的仍处理）", n === 5, "隐藏数=" + n);
+}
+
+console.log("");
+console.log("=== 六、契约一致性（实现与契约表对得上）===");
 console.log("");
 
 reset();
 {
   applyMenuVisibility();
   const allIds = MENU_CONTRACT.flatMap(e => e.ids);
-  ok("5.1 契约里每个 id 都被处理到了（都建了节点）",
+  ok("6.1 契约里每个 id 都被处理到了（都建了节点）",
      allIds.every(id => !!nodes[id]),
      allIds.filter(id => !nodes[id]).join(","));
 }

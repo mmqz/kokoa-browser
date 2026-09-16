@@ -150,40 +150,121 @@ function isVisible(item) {
  *
  * @returns {number} 实际隐藏了几项
  */
+/**
+ * 【★ 为什么不能只查 document（2026-09-16 实机发现）】
+ *
+ * appMenu 的菜单项【不在文档里】—— 它们在：
+ *
+ *     <html:template id="appMenu-viewCache">
+ *       <panelview id="appMenu-mainView">
+ *         <toolbarbutton id="appMenu-print-button2" .../>   <- 在这里
+ *
+ * 而真正的 <panelmultiview id="appMenu-multiView"> 一开始是【空的】，
+ * 内容在【菜单第一次打开时】才从模板克隆进去。
+ *
+ * 后果：在 #init() 里调 PanelMultiView.getViewNode(document, id)
+ *       -> 返回 null -> 静默跳过 -> 菜单项【照常显示】。
+ *
+ * 【这就是我第一次实机验收时「打印/登录仍没隐藏」的原因。】
+ * 单测测不出来：测试里我造的假 PanelMultiView 总能返回节点，
+ * 掩盖了「真实环境里节点还不存在」这个事实。
+ *
+ * 【官方怎么做的】browser-sync.js 同时操作两处：
+ *     document.querySelectorAll('.syncNowBtn')                    // 已实例化的
+ *     document.getElementById('appMenu-viewCache')
+ *             .content.querySelectorAll('.syncNowBtn')            // ★ 模板里的
+ * （<html:template> 的内容用 .content 访问，不是 .querySelector 直接递归）
+ *
+ * 所以这里也两处都设 —— 模板里设好，菜单一打开就是隐藏的。
+ */
+
+/**
+ * 对【一个】元素按可见性设置 hidden。
+ * @returns {boolean} 是否真的隐藏了
+ */
+function applyToElement(element, visible) {
+  if (!element) {
+    return false;
+  }
+  if (visible) {
+    element.removeAttribute("hidden");
+    return false;
+  }
+  element.setAttribute("hidden", "true");
+  return true;
+}
+
+/**
+ * 取 appMenu-viewCache 模板的内容根（拿不到就给 null）。
+ * 【为什么要 try】模板可能还没解析出来 / id 变了。
+ */
+function getAppMenuTemplate() {
+  try {
+    const tpl = document.getElementById("appMenu-viewCache");
+    return tpl && tpl.content ? tpl.content : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * 【给上层复用】按 pref 把某个 id 的可见性应用到所有出现的地方。
+ *
+ * 两处：
+ *   1. 已实例化的视图节点（菜单打开过之后就有）
+ *   2. appMenu-viewCache 模板里（菜单从没打开过时【只有这里】）
+ *
+ * @returns {number} 实际隐藏的元素数
+ */
+function applyToId(id, visible) {
+  let n = 0;
+
+  // ① 已实例化的
+  try {
+    if (applyToElement(PanelMultiView.getViewNode(document, id), visible)) {
+      n++;
+    }
+  } catch (e) {
+    log("getViewNode 失败（跳过）: " + id);
+  }
+
+  const tpl = getAppMenuTemplate();
+  if (tpl) {
+    try {
+      const els = tpl.querySelectorAll("#" + id);
+      for (const el of els) {
+        if (applyToElement(el, visible)) {
+          n++;
+        }
+      }
+    } catch (e) {
+      log("模板查询失败（跳过）: " + id);
+    }
+  }
+
+  return n;
+}
+
+/**
+ * 按 pref 应用隐藏/显示。
+ *
+ * 【何时调用】ZenMenubar 的 #init()（见那边注释）。
+ * 那时菜单项多半还在模板里 —— 所以【模板那条路是主路径】。
+ *
+ * @returns {number} 实际隐藏的元素数
+ */
 export function applyMenuVisibility() {
   let hiddenCount = 0;
   for (const item of MENU_ITEMS) {
     const visible = isVisible(item);
     for (const id of item.ids) {
-      let element = null;
-      try {
-        element = PanelMultiView.getViewNode(document, id);
-      } catch (e) {
-        // 某些 id 可能不在当前构建里（上游改过名）——
-        // 不致命，跳过并记一笔。
-        log("取不到菜单项（跳过）: " + id);
-        continue;
-      }
-      if (!element) {
-        continue;
-      }
-      if (visible) {
-        element.removeAttribute("hidden");
-      } else {
-        element.setAttribute("hidden", "true");
-        hiddenCount++;
-      }
+      hiddenCount += applyToId(id, visible);
     }
   }
-  log("已应用菜单可见性（隐藏 " + hiddenCount + " 项）");
+  log("已应用菜单可见性（隐藏 " + hiddenCount + " 处）");
   return hiddenCount;
 }
 
-/**
- * 【给测试 / 调试用】导出契约表。
- * 这样测试能验证"表里的 id 与 pref 名"符合预期，
- * 而不用去猜（或复制一份）。
- */
 export const MENU_CONTRACT = MENU_ITEMS.map(i => ({
   pref: PREF_PREFIX + i.pref,
   ids: i.ids.slice(),
