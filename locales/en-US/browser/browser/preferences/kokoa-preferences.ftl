@@ -23,4 +23,13 @@ kokoa-dsh-status-loading = Checking dsh status…
 
 kokoa-section-menu = Menu
 kokoa-menu-description = Choose which items appear in the main menu.
-kokoa-menu-todo = (Coming soon — the menu customization is planned.)
+kokoa-menu-new-tab =
+    .label = New tab
+kokoa-menu-new-window =
+    .label = New window
+kokoa-menu-print =
+    .label = Print
+kokoa-menu-save-file =
+    .label = Save page as…
+kokoa-menu-fxa =
+    .label = Sign in to Firefox

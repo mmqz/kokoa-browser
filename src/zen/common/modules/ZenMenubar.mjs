@@ -25,6 +25,23 @@ export class nsZenMenuBar {
     this.#initSpacesMenu();
     this.#initAppMenu();
     this.#hideWindowRestoreMenus();
+
+    // 【Kokoa 2026-09-16】按 pref 隐藏部分主菜单项。
+    //
+    // 放在 #initAppMenu() 【之后】—— 因为要先等菜单项被创建出来，
+    // 才能对它们设 hidden 属性。
+    // （这跟上面的 #hideWindowRestoreMenus() 位置一致，是同一个道理。）
+    //
+    // 机制与默认值表见 src/zen/kokoa/KokoaMenubar.mjs。
+    try {
+      const { applyMenuVisibility } = ChromeUtils.importESModule(
+        "resource:///modules/zen/KokoaMenubar.mjs"
+      );
+      applyMenuVisibility();
+    } catch (e) {
+      // 不致命：菜单可见性失败不该让菜单整个坏掉
+      console.error("[Kokoa] 应用菜单可见性失败: " + e);
+    }
   }
 
   #initViewMenu() {

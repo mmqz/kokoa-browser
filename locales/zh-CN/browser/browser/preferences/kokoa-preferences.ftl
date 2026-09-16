@@ -23,4 +23,13 @@ kokoa-dsh-status-loading = 正在检查 dsh 状态…
 
 kokoa-section-menu = 菜单
 kokoa-menu-description = 选择主菜单里显示哪些项。
-kokoa-menu-todo = （即将支持 —— 菜单自定义在做。）
+kokoa-menu-new-tab =
+    .label = 新标签页
+kokoa-menu-new-window =
+    .label = 新窗口
+kokoa-menu-print =
+    .label = 打印
+kokoa-menu-save-file =
+    .label = 保存页面为…
+kokoa-menu-fxa =
+    .label = 登录 Firefox

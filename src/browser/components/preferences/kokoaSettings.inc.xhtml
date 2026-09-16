@@ -55,16 +55,51 @@
   </groupbox>
 
   <!--
-    【给后续集成 dsh 的人】
-    下面这一节是预留给「AI 详细配置」的。
-    加新项时：
-      · 每项写进 prefs/kokoa/*.yaml（默认值）+ 这里一个控件
-      · 文案写进 locales/{en-US,zh-CN}/.../kokoa-preferences.ftl
-      · 逻辑挂在 src/zen/kokoa/kokoa-settings.js 的 gKokoaSettings 上
+    菜单：主菜单（appMenu）里显示哪些项。
+
+    【控件怎么工作】用 Firefox 设置页标准的 preference 绑定：
+      <checkbox preference="完整 pref 名" />
+    勾选框会自动读/写那个 pref，不需要额外的 JS ——
+    Zen 自己的设置页也是这么用的（见 zenLooksAndFeel.inc.xhtml L35）。
+
+    【pref 默认值在哪】prefs/kokoa/menu.yaml
+    【谁消费这些 pref】src/zen/kokoa/KokoaMenubar.mjs
+
+    【★ 三处要保持一致】（改动时一起改）
+      1. KokoaMenubar.mjs 的 MENU_ITEMS（实现）
+      2. 这个文件的勾选框
+      3. prefs/kokoa/menu.yaml（默认值）
+    （KokoaMenubar.test.js 守住了第 1 处。）
+
+    【为什么默认隐藏这三项】见 menu.yaml 的注释。
   -->
   <groupbox>
     <html:h2 data-l10n-id="kokoa-section-menu"></html:h2>
     <description data-l10n-id="kokoa-menu-description"></description>
-    <description data-l10n-id="kokoa-menu-todo"></description>
+
+
+    <!-- 基础动作（默认显示） -->
+    <checkbox
+      id="kokoaMenuNewTabVisible"
+      data-l10n-id="kokoa-menu-new-tab"
+      preference="kokoa.menu.new-tab.visible" />
+    <checkbox
+      id="kokoaMenuNewWindowVisible"
+      data-l10n-id="kokoa-menu-new-window"
+      preference="kokoa.menu.new-window.visible" />
+
+    <!-- ★ 用户要求默认【隐藏】的三项 -->
+    <checkbox
+      id="kokoaMenuPrintVisible"
+      data-l10n-id="kokoa-menu-print"
+      preference="kokoa.menu.print.visible" />
+    <checkbox
+      id="kokoaMenuSaveFileVisible"
+      data-l10n-id="kokoa-menu-save-file"
+      preference="kokoa.menu.save-file.visible" />
+    <checkbox
+      id="kokoaMenuFxaVisible"
+      data-l10n-id="kokoa-menu-fxa"
+      preference="kokoa.menu.fxa.visible" />
   </groupbox>
 </html:template>

@@ -1,0 +1,38 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Kokoa —— 主菜单项的可见性。
+#
+# 【谁在用这些 pref】
+#   src/zen/kokoa/KokoaMenubar.mjs  （读它们 + 设菜单项的 hidden 属性）
+#   src/browser/components/preferences/kokoaSettings.inc.xhtml  （设置页的勾选框）
+#
+# 【★ 契约】
+#   pref 名 / 默认值必须与 KokoaMenubar.mjs 里的 MENU_ITEMS 一致。
+#   KokoaMenubar.test.js 会验证实现那一侧；
+#   这里与设置页是人工保持同步的（改动时三处一起改）。
+#
+# 【为什么默认隐藏这三项】
+#   用户明确要求：「二级菜单里默认隐藏无关项」。
+#   这三项是 Kokoa 的定位（AI 浏览器）里基本用不到的。
+#   用户在「设置 -> Kokoa -> 菜单」里可以逐个打开。
+
+# ── 基础动作（默认显示）──────────────────────────────
+- name: kokoa.menu.new-tab.visible
+  value: true
+
+- name: kokoa.menu.new-window.visible
+  value: true
+
+# ── 默认隐藏的三项 ───────────────────────
+- name: kokoa.menu.print.visible
+  value: false
+
+# 登录 Firefox（fxa 一族：status2 / label2 / text 共用一个开关）
+- name: kokoa.menu.fxa.visible
+  value: false
+
+# 保存页面
+- name: kokoa.menu.save-file.visible
+  value: false
