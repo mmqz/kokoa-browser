@@ -25,3 +25,12 @@ index 017125bc2510e5f5e317a5e78c40d6aa9ded76ca..d343d8c62a2251e3c3a33ae8f2ab9c4c
 +     置为 none —— 但【保留 min-width/min-height】，避免布局塔陷。 */
 +  background-image: none;
    background-repeat: no-repeat;
+
+@@ -32,3 +35,6 @@
+ #rightBox {
+-  background-image: url("chrome://branding/content/about-wordmark.svg");
++  /* 【2026-09-16 去掉字标】用户要求「不要应用内部的 logo」。
++     这是「关于」对话框右侧的 Firefox 字标（about-wordmark.svg）。
++     左侧的圆形 logo 已在上面去掉（#leftBox）。 */
++  background-image: none;
+   background-repeat: no-repeat;

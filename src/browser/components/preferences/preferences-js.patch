@@ -45,3 +45,18 @@ index 94612d8e28af58fcb04914440348b899a0a1e08f..da3b1ffd09745d09589283356d1001db
  
    // Restore the cached Firefox Labs nav button visibility so it shows
    // immediately when recipes are expected to be available, before
+
+@@ -461,8 +461,12 @@
+   moreFromMozilla: {
+     l10nId: "more-from-moz-page-header",
+     iconSrc: "chrome://browser/skin/preferences/mozilla-16.svg",
+     groupIds: ["moreFromMozillaPromo", "moreFromMozillaProducts"],
+     module: "chrome://browser/content/preferences/config/moreFromMozilla.mjs",
+-    visible: () => NimbusFeatures.moreFromMozilla.getVariable("enabled"),
++    // 【2026-09-16 隐藏】用户要求不要应用内的品牌元素。
++    //   这是设置里的「更多来自 Mozilla」（推广 Firefox 移动版），
++    //   Kokoa 没有移动版，那个面板对我们无意义。
++    //   原来由 Nimbus（远程实验）控制，本地 pref 关不掉 -> 直接返回 false。
++    visible: () => false,
+     replaces: "moreFromMozilla",
+   },
