@@ -1,0 +1,20 @@
+diff --git a/browser/themes/shared/privatebrowsing/aboutPrivateBrowsing.css b/browser/themes/shared/privatebrowsing/aboutPrivateBrowsing.css
+--- a/browser/themes/shared/privatebrowsing/aboutPrivateBrowsing.css
++++ b/browser/themes/shared/privatebrowsing/aboutPrivateBrowsing.css
+@@ -65,5 +65,8 @@
+ .logo {
+-  background: image-set(url("chrome://branding/content/about-logo-private.png"), url("chrome://branding/content/about-logo-private@2x.png") 2x) no-repeat
++  /* 【2026-09-16 去掉 logo】用户要求「不要应用内部的 logo」。
++     这是隐私浏览页的圆形 logo。
++     置 none，但保留宽高（避免布局变化）。 */
++  background: none;
+     center;
+   background-size: var(--size-image-xxlarge);
+   display: inline-block;
+@@ -74,4 +79,5 @@
+ .wordmark {
+   display: inline-block;
+-  background: url("chrome://branding/content/firefox-wordmark.svg") no-repeat center center;
++  /* 【2026-09-16】文字标也去掉（上面那个 logo 的搭档）。 */
++  background: none;
+   background-size: 172px;
