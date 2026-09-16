@@ -70,12 +70,25 @@ bash scripts/verify-artifact-modules.sh <产物目录>
 
 | 项 | 说明 |
 |---|---|
-| AI 工作区侧栏第 2/3 步 | **第 1 步（最小可见）已落地，待实机确认 include 位置**；确认后接 KokoaDshSessions（已在 main，49 用例）做会话列表 UI |
+| AI 工作区侧栏第 2/3 步 | **第 1 步（最小可见）已落地并过产物验证**（35113050289：侧栏 css/ftl 进包 + 挂载进 browser.xhtml，31/31）；待实机确认 include 位置后接 KokoaDshSessions（49 用例）做会话列表 UI |
 | branding 图标 | 现在还是 Zen/Firefox 图标（应用内 logo 清理已做一批：a4d5333 / cbda640 / f61ed9e） |
 | dsh 会话切换 | **已查清：做不到**。当前会话是 dsh 页面本地状态，无 URL 路由、无外部触发通道（dsh-0.1.5-interface.md）；产品形态改为【列表展示 + 引导用户在 dsh 内切换】，强需则向 dsh 上游提 deep-link |
 | release 流水线的 zen-browser/* 引用 | 真做发布时才需要 |
 
 # 四、一句话
 
-**AI 工作区主线：代码层验证全部闭环（35056127083 = 17/17+148/148；35069527609 = 18/18+197/197），实机验收第一轮已完成；侧栏 MVP 第 1 步已落地待实机看位置。**
+**AI 工作区主线：代码层验证全部闭环（35056127083 = 17/17+148/148；35069527609 = 18/18+197/197；35113050289 = 31/31+202/202 含侧栏），实机验收第一轮已完成；侧栏 MVP 第 1 步已过产物验证，待实机看位置。**
 侧栏位置确认后接会话列表，主线就算初步完成。
+
+# 五、★ 基线升级遗留：156.0 patch 债（PR #3 已清）
+
+surfer.json candidate=156.0 生效后 CI 基线已升级 Firefox 156.0，但一批 155 时代
+手写的 patch（空行分隔 hunk + 行号乱序 + 上下文漂移）从未在 156 上验证过，
+在 PR #3 的构建里逐个引爆（aboutDialog / preferences-js / uninstaller-nsi /
+aboutPrivateBrowsing 四个），已全部按「语义不变、156 实际文本重新定位」重建。
+
+**给后续的经验**：上游升级（改 candidate）后，先跑离线批量探测
+（PR #3 用的方法：248 个 patch × 156 原版逐个 git apply --check，同文件多 patch
+按 Import 顺序串行），再排构建 —— 省得 2h/轮地撞墙。
+另外 jar.mn 纯 CSS 条目不要加 * 前缀（* 会要求文件里有 % 指令，否则
+jar_maker 报 'no preprocessor directives found'）。
