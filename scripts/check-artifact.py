@@ -40,7 +40,7 @@ def chk(name, cond, detail=''):
     results.append((bool(cond), name, detail))
 
 # 1. Kokoa 模块
-mods = ['KokoaAiPanel','KokoaAiSplit','KokoaDshSidecar','KokoaWorkspaceSessions','KokoaMenubar']
+mods = ['KokoaAiPanel','KokoaAiSplit','KokoaDshSessions','KokoaDshSidecar','KokoaWorkspaceSessions','KokoaMenubar']
 for m in mods:
     hit = [n for n in names if 'modules/zen/' in n and m in n]
     chk('模块进包: ' + m, hit, hit[0] if hit else '不在产物')
