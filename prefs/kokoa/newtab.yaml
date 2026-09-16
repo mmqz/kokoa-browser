@@ -1,0 +1,27 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Kokoa —— 新标签页的外观。
+#
+# 【2026-09-16 加】
+#   用户要求：「logo / 图标不需要，直接空或者取消，我不喜欢应用内部的 logo」
+
+# 隐藏新标签页的 logo（那个圆形徽标）
+#
+# 【★ 为什么之前改了源码却没生效】
+#   ActivityStream.sys.mjs 里有一张「默认值表」，那里写的 value 只是
+#   【activity-stream 内部的默认值】，它【不会】写进 defaults/preferences/firefox.js。
+#   而真正生效的 pref 是 browser.newtabpage.activity-stream.hideLogo ——
+#   它在 firefox.js 里【没有】条目，所以用的是 Firefox 内置默认（false）。
+#
+#   我一开始只改了那张表 -> 无效（实测：firefox.js 里 110 条 activity-stream pref，
+#   唯独没有 hideLogo）。
+#
+# 【正确做法】写进我们自己的 prefs（这条路径会编译进 firefox.js 的默认值）。
+- name: browser.newtabpage.activity-stream.hideLogo
+  value: true
+
+# 顺带：新标签页的名称/标题也不需要（配合隐藏 logo）
+- name: browser.newtabpage.activity-stream.hideTopSitesTitle
+  value: false

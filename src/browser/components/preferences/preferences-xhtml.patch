@@ -11,7 +11,7 @@ index 1b8c38159314b6edee9e6f455beb2b63db1ad3f0..1308345db640dba6b2848b49ef7c1181
    <link rel="localization" href="branding/brand.ftl"/>
    <link rel="localization" href="browser/browser.ftl"/>
      <!-- Used by fontbuilder.js -->
-@@ -118,6 +120,32 @@
+@@ -118,6 +120,35 @@
          iconsrc="chrome://browser/skin/preferences/category-general.svg"
          data-l10n-id="pane-general-title">
        </html:moz-page-nav-button>
@@ -36,9 +36,12 @@ index 1b8c38159314b6edee9e6f455beb2b63db1ad3f0..1308345db640dba6b2848b49ef7c1181
 +        data-l10n-id="pane-zen-marketplace-title">
 +      </html:moz-page-nav-button>
 +      <!-- Kokoa 分类。注意：paneKokoa 需要 preferences-js.patch 里改条件才会展开 -->
++      <!-- 【2026-09-16 去掉图标】用户要求「不要应用内部的 logo」。
++           标准做法：不写 iconsrc属性（paneProfiles / paneTranslations 就是这样，
++           上游自己就有 2 个无图标的分类）。
++           原本用的是 chrome://browser/skin/customize.svg（Zen 的橙色定制图标）。 -->
 +      <html:moz-page-nav-button id="category-kokoa"
 +        view="paneKokoa"
-+        iconsrc="chrome://browser/skin/customize.svg"
 +        data-l10n-id="pane-kokoa-title">
 +      </html:moz-page-nav-button>
        <html:moz-page-nav-button id="category-sync"
