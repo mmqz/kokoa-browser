@@ -49,19 +49,41 @@ for m in mods:
 ff = 'defaults/preferences/firefox.js'
 if ff in names:
     t = z.read(ff).decode('utf-8','replace')
-    prefs = dict((m.group(1), m.group(2).strip()) for m in re.finditer(r'pref\(\s*"(kokoa\.menu\.[^"]+)"\s*,\s*([^)]{0,20})\)', t))
+    # 收两个前缀：kokoa.menu.*（菜单）与 browser.shell.*（首次运行/默认浏览器）
+    prefs = {}
+    for _m in re.finditer(r'pref\(\s*"((?:kokoa\.menu|browser\.shell)\.[^"]+)"\s*,\s*([^)]{0,24})\)', t):
+        prefs[_m.group(1)] = _m.group(2).strip()
     expect = {
         'kokoa.menu.new-tab.visible': 'true',
         'kokoa.menu.new-window.visible': 'true',
         'kokoa.menu.print.visible': 'false',
         'kokoa.menu.fxa.visible': 'false',
         'kokoa.menu.save-file.visible': 'false',
+        # 【2026-09-16】首次运行 / 默认浏览器 / 任务栏（用户要求不弹）
+        'browser.shell.checkDefaultBrowser': 'false',
+        'browser.shell.setDefaultBrowserUserChoice': 'false',
+        'browser.shell.setDefaultGuidanceNotifications': 'false',
+        'browser.shell.skipDefaultBrowserCheckOnFirstRun': 'true',
+        'browser.shell.pinToTaskbar': 'false',
     }
     for k, v in expect.items():
         got = prefs.get(k)
         chk('pref ' + k + ' = ' + v, got == v, ('实际 ' + got) if got else '缺')
 else:
     chk('存在 firefox.js', False, '不在产物')
+
+# 2b. ★ 欢迎页 URL 不能指向 GitHub（2026-09-16 实机验收踩的坑）
+# 【注意】这几条在 firefox-branding.js，不是 firefox.js（踩过）
+fbr = 'defaults/preferences/firefox-branding.js'
+if fbr in names:
+    t = z.read(fbr).decode('utf-8','replace')
+    bad = []
+    for k in ['startup.homepage_welcome_url', 'startup.homepage_welcome_url.additional', 'startup.homepage_override_url']:
+        m = re.search(r'pref\(\s*"' + re.escape(k) + r'"\s*,\s*"([^"]*)"', t)
+        if m and m.group(1).strip():
+            bad.append(k + ' -> ' + m.group(1)[:40])
+    chk('★ 欢迎页 URL 不指向外部站点（不打开 GitHub）', not bad,
+        '; '.join(bad) if bad else '全部为空')
 
 # 3. 品牌名
 bftl = [n for n in names if n.endswith('brand.ftl') and '/en-US/' in n]

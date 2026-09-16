@@ -31,9 +31,13 @@
 //   目前指向我们的仓库（我们还没有官网/发行说明页）。
 //   等有了官网，把下面换成对应的 URL 即可。
 
-pref("startup.homepage_override_url", "https://github.com/tomjiu/kokoa-browser");
-pref("startup.homepage_welcome_url", "https://github.com/tomjiu/kokoa-browser");
-pref("startup.homepage_welcome_url.additional", "https://github.com/tomjiu/kokoa-browser");
+// 【2026-09-16 实机验收后修】
+//   原来这三个都指向 GitHub —— 后果是【每次启动都打开那个页面】。
+//   它们本来是「首次运行要打开的欢迎页」，不是「我们的主页」。
+//   现在设为空 -> 不打开任何外来页面（首次运行走 about:home）。
+pref("startup.homepage_override_url", "");
+pref("startup.homepage_welcome_url", "");
+pref("startup.homepage_welcome_url.additional", "");
 
 // Give the user x seconds to react before showing the big UI. default=192 hours
 pref("app.update.promptWaitTime", 691200);
