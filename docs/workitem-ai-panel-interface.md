@@ -116,22 +116,29 @@ space.kokoaSessionId = "session-<uuid>" | null
 
 **四步都不碰 Zen 的核心逻辑，全部在我们已经改过的 `zen-sets.js` 里扩展。**
 
-# 五、我没查清的
+# 五、我没查清的（2026-09-16 云端调研后：三个都解决了）
+
+> 调研报告：`docs/dsh-0.1.5-interface.md`（dsh@0.1.5-rc.1 源码逐文件读，
+> 每条结论带 包名+文件+行号）。原文留档如下，现状见括号内。
 
 ```
+✅ /api/session.export 等接口的确切签名
+   （GET /api/session.export?sessionId=<id>&includeDescendants=true；
+    一元 RPC 全表 + session/list 的完整 schema 已记录）
+✅ 从 dsh 标签「切到某个会话」到底能不能做到
+   （【做不到】—— 当前会话是页面本地状态，无 URL 路由、无外部触发通道，
+    重载也只会落到最近工作区的空白/新建会话。产品边界，不是分支能绕的）
+✓ dsh 有会话列表接口（POST /api/session/list，items 含 title/running/blank/cwd）
+   —— 已落地：src/zen/kokoa/KokoaDshSessions.mjs（49 用例，Node 可测）
 ❓ #ai-window-splitter 原本配套的窗格是什么（Zen 移除了什么）
-   可查 Zen 的 git 历史或旧版本
-❓ dsh 的 /api/session.export 等接口的确切签名（只知道参数名 sessionId）
-❓ 从 dsh 标签「切到某个会话」到底能不能做到
-   如果 dsh 没有 URL 路由、也没有前端 API，那可能只能靠【重新加载页面】
-   —— 这是个关键未知，可能需要读 dsh 源码
-❓ AI 面板要不要显示会话列表（那需要 dsh 有列表接口）
+   （仍未查清，可查 Zen 的 git 历史或旧版本）
 ```
 
-# 六、风险
+# 六、风险（2026-09-16 更新）
 
 | 风险 | 应对 |
 |---|---|
-| dsh 没有「切换会话」的接口 -> 功能做不出来 | **第 4 步先验证**：能不能拿到会话标题 |
-| 会话 id 拿不到（URL 里没有） | 接受「拿标题显示」这个降级形态 |
+| ~~dsh 没有「切换会话」的接口~~ | **已证实**：切换=页面本地状态，外壳无法驱动。产品形态改为【列表展示 + 引导用户在 dsh 内切换】；强需则向 dsh 上游提 deep-link |
+| ~~会话 id 拿不到~~ | session/list 直接给 sessionId + title，id 不再只靠标题猜 |
 | `#ai-window-splitter` 语义不明 | 先用候选 A（splitTabs），不碰它 |
+| dsh 是 0.x，接口随版本漂移 | KokoaDshSessions 的响应解析是严格模式（形状不对即报错）；升级 dsh 后按 dsh-0.1.5-interface.md 第八节复跑调研 |
