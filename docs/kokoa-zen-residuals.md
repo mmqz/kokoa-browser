@@ -24,14 +24,14 @@
 | `build/AppDir/zen.desktop:4,8` | `Exec=zen` / `StartupWMClass=zen` | `kokoa` | 同上 |
 | 同文件 Actions 段 Exec= | `zen ...` | `kokoa ...` | 同上 |
 
-## 2. 必须改（尚未改 — 下一轮）
+## 2. 必须改（2026-09-16 核对后：标注已完成的那条已清理）
 
 | 位置 | 现状 | 理由 |
 |---|---|---|
 | `configs/branding/release/`、`configs/branding/twilight/` | 仍是 Zen/Firefox 图标与 about 文案 | 用户可见品牌资产 |
 | `build/AppDir/AppRun`、`build/AppDir/usr/share/icons/...` | 图标/启动脚本仍指向 zen | 打包产物 |
 | `.github/workflows/build.yml` 等上游 release 流水线 | 大量 `zen-browser/*` 仓库引用 | **今晚不用跑它们**；真要做发布流水线时必须改成我们的 |
-| 关于对话框 / 欢迎页文案里的「Zen」 | `src/browser/base/content/aboutDialog-*.patch` 等 | 用户可见 |
+| ~~关于对话框 / 欢迎页文案里的 Zen~~ | 已完成：2026-09-16 实测产物 aboutDialog.xhtml 里 zen 出现 0 次；brand.ftl 五项全是 Kokoa | 已清理 |
 
 ## 3. 可以留（内部标识 — 刻意不改）
 

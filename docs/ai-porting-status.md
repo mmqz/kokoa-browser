@@ -87,56 +87,69 @@
 
 ---
 
-# 四、⚠️ 未验证的（**重要**）
+# 四、验证进度（2026-09-16 更新）
 
-## 4.1 运行时行为（只有静态检查过）
+> ⚠️ 这一节【重写过】。原文说「只有静态检查过，运行时待做」，
+> 现在有一部分【已经验证了】—— 而且验证点比预想的靠前。
+
+## 4.1 ✅ 已验证（构建 35047911545）
+
+| 项 | 状态 | 怎么验证的 |
+|---|---|---|
+| 模块能否被真的 import | ✅ | 从 omni.ja 抽出模块，**跑我们的单测 104/104 全过** |
+| 模块真的进包了 | ✅ | 产物里 `modules/zen/Kokoa*.mjs` 4 个都在 |
+| 行为与源码一致 | ✅ | 对【产物里的模块】跑行为测试，结果与源码相同 |
+
+**关键改进**：以前「模块能被 import」只能靠实机测。
+现在有 `scripts/verify-artifact-modules.sh` —— 产物一下载就能验。
+
+## 4.2 ⏳ 仍要实机（单测覆盖不到）
+
 ```
-· 4 个模块能否被真的 import（resource:///modules/zen/...）
-· dsh 能否被真的拉起（Subprocess.call 的用法）
-· 分屏能否真的工作
+· dsh 能否被真的拉起（Subprocess.call 要真进程）
+· 分屏的视觉效果
 · 设置页能否真的展开（paneKokoa 的条件）
+· 菜单项是否真的隐藏了
 ```
 
-**这些要等构建产物 + 实机测试。**
+见 `docs/manual-test-checklist.md`（构建出来后照着点）。
 
-## 4.2 一个已知的构建教训
+## 4.3 一个已修的构建教训（保留作记录）
+
 ```
 第一次构建（35007320104）成功，但 4 个模块【不在产物里】。
 原因：src/zen/moz.build 的 DIRS 没登记 kokoa 子目录。
 -> 已修 + 加了检查（check_mozbuild_dirs）
--> 但仍需【下次构建】确认模块真的进包
+-> 构建 35032271818 已确认模块真的进包 ✅
 ```
 
 ---
 
-# 五、剩下的工作
+# 五、剩下的工作（2026-09-16 更新）
 
-## 5.1 短期
+## 5.1 ✅ 已完成
+
 ```
-· 等构建确认模块进包
-· 实机测：点 AI 工作区按钮 -> dsh 起来 -> 面板打开
-· 实机测：点 AI 分屏 -> 与网页并排
-· 验证：设置页的 Kokoa 分类能展开
+· 等构建确认模块进包         -> ✅ 35032271818 确认
+· 二级菜单可配置             -> ✅ 已实现（待 35056127083 验证）
+· 单测覆盖                   -> ✅ 119 个用例，7 个文件
 ```
 
-## 5.2 中期（见各工作项）
+## 5.2 ⏳ 剩下（要实机）
+
 ```
-· 会话切换（dsh 怎么切会话还没查清 —— 见 workitem-ai-panel-interface.md）
-· 二级菜单可配置（workitem-menubar-configurable.md）
+· 实机点一遍 AI 工作区 / 分屏 / 设置页 / 菜单
+  见 docs/manual-test-checklist.md
+```
+
+## 5.3 之后再说（不阻塞）
+
+```
+· 会话切换（dsh 怎么切会话还没查清 —— workitem-ai-panel-interface.md）
+  现状：KokoaWorkspaceSessions 【故意只记录状态】，等接口查清再接
 · AI 工作区侧栏（workitem-ai-workspace-sidebar.md）
+  现状：【未实现】。但它是增强 —— 现在用「标签页 + 分屏」已经能用
+· branding 图标替换（现在还是 Zen/Firefox 图标）
 ```
 
----
-
-# 六、文档索引
-
-| 文档 | 内容 |
-|---|---|
-| `workitem-ai-porting.md` | 移植方案（本文是它的执行结果） |
-| `workitem-ai-panel-interface.md` | AI 面板接口设计 |
-| `workitem-workspace-session-binding.md` | 会话绑定（含我的重大修正） |
-| `workitem-menubar-configurable.md` | 二级菜单可配置 |
-| `workitem-kokoa-settings.md` | 设置页 |
-| `known-facts-from-mainline.md` | **从主线提取的实测结论**（dsh/Subprocess/DOM） |
-| `build-metadata-conventions.md` | 构建元数据约定（踩 5 次坑后整理） |
-| `kokoa-module-registration.md` | 模块注册/导入方式 |
+**完整盘点见 `docs/remaining-to-done.md`。**

@@ -93,11 +93,28 @@ scripts/check.sh，7 项检查：
 # 五、几份必读的文档（在仓库 docs/ 下）
 
 ```
-docs/known-facts-from-mainline.md     从主线提取的实测结论（dsh / Subprocess / DOM）
-docs/zen-code-map.md                  Zen 代码掌控度地图（哪些模块摸清了）
-docs/vendor-profile-unsolved.md       Vendor/Profile 的问题史（含我的错误）
-docs/workitem-*.md                    4 份工作项（会话绑定 / 侧栏 / 设置页 / AI 面板）
-docs/branding-residue-full.md         品牌残留清单
+【先读这几份（按顺序）】
+docs/remaining-to-done.md         ★ 距「初步完成」还差多少（最新盘点，先看这个）
+docs/testing-pitfalls.md          ★ 写测试时我踩过的坑（10 条，写测试前先扫一眼）
+docs/artifact-verification.md     ★ 核对产物的正确姿势（我在这上面错过一次）
+docs/ai-unit-test-boundary.md     AI 模块哪些能 Node 单测、哪些必须实机
+docs/manual-test-checklist.md     实机测试清单（构建出来后照着点）
+
+【背景 / 机制】
+docs/known-facts-from-mainline.md 从主线提取的实测结论（dsh / Subprocess / DOM）
+docs/zen-code-map.md              Zen 代码掌控度地图（哪些模块摸清了）
+docs/vendor-profile-unsolved.md   Vendor/Profile 的问题史（含我的错误）
+docs/branding-residue-full.md     品牌残留清单
+docs/build-metadata-conventions.md 构建元数据的约定（patch/png 等，踩过 5 次）
+
+【工作项 workitem-*.md（6 份）】
+  已完成：菜单可配置 / 会话绑定 / AI 移植 / 设置页
+  未开始：AI 工作区侧栏（增强，不阻塞）
+  AI 面板接口：dsh 会话切换怎么做的还没查清
+
+【构建核对记录】
+docs/build-35047911545-verified.md  最近一次成功构建的核对结果
+docs/build-artifact-layout.md       产物存放约定（别再散落一地）
 ```
 
 # 六、验收方（我）的已知弱点（**请据此设计你们的产出**）
