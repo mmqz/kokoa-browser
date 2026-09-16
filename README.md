@@ -14,6 +14,46 @@ Kokoa 是一款「AI 工作区与网页同级」的桌面客户端。此前它�
 - 主仓（私有）：https://github.com/tomjiu/kokoa
 - 上游：https://github.com/zen-browser/desktop （MPL-2.0）
 
+## 当前进度（先看这里）
+
+> 仓库里有 50 份文档，但它们记录的是【不同时期】的状态，
+> 有些已经过期。**这一节是唯一保证最新的入口。**
+
+### 现在到哪了
+
+```
+✅ 品牌名 = Kokoa（brand.ftl 五项全对，关于对话框已无 Zen 残留）
+✅ AI 工作区：4 个模块进了包，104 个单测对【产物里的模块】全过
+✅ 欢迎页大标题已删、新标签页 Zen logo 已隐藏
+✅ 主菜单可按 pref 配置（默认隐藏打印 / 登录 Firefox / 保存页面）
+⏳ 待实机验证：点 AI 工作区 -> dsh 起来 -> 面板打开；分屏；菜单隐藏
+⏭  之后再说：AI 工作区侧栏、branding 图标、dsh 会话切换
+```
+
+**详见 `docs/remaining-to-done.md`。**
+
+### 几条重要的约定（踩过坑才有的）
+
+| 想做什么 | 先读 |
+|---|---|
+| 核对构建产物 | `docs/artifact-verification.md` |
+| 写测试 | `docs/testing-pitfalls.md` |
+| 判断某段 AI 逻辑要不要构建才能测 | `docs/ai-unit-test-boundary.md` |
+| 改 patch / png 等构建元数据 | `docs/build-metadata-conventions.md` |
+| 实机验收 | `docs/manual-test-checklist.md` |
+
+### 常用的两条命令
+
+```bash
+# 本地快速检查（不构建，秒级）
+bash scripts/check.sh tests
+
+# 核对某个构建产物的模块是否行为正确（下载产物后）
+bash scripts/verify-artifact-modules.sh <产物目录>
+```
+
+---
+
 ## 当前状态（任务 1 之后）
 
 本仓库**就是一棵完整的 Zen 源码树**，外加我们自己的 `.github/workflows/`。
