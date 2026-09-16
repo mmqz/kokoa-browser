@@ -1,7 +1,5 @@
 diff --git a/browser/installer/windows/nsis/uninstaller.nsi b/browser/installer/windows/nsis/uninstaller.nsi
-old mode 100755
-new mode 100644
-index becbb0f70c84eb7f2d9bff5a3aedcbb7a78a61cf..a23a8a1b160932368377fc841b501df9355918db
+index becbb0f70c84eb7f2d9bff5a3aedcbb7a78a61cf..ab71ebd50a93fd73c3f028a059750a9de910af9d 100644
 --- a/browser/installer/windows/nsis/uninstaller.nsi
 +++ b/browser/installer/windows/nsis/uninstaller.nsi
 @@ -150,7 +150,11 @@ OutFile "helper.exe"
@@ -17,7 +15,18 @@ index becbb0f70c84eb7f2d9bff5a3aedcbb7a78a61cf..a23a8a1b160932368377fc841b501df9
  
  ; Support for the profile refresh feature
  !define URLProfileRefreshHelp "https://support.mozilla.org/kb/refresh-firefox-reset-add-ons-and-settings"
-@@ -516,6 +516,7 @@ Section "Uninstall"
+@@ -219,7 +223,9 @@ Function un.Survey
+   ; synchronous message handler (where we currently are); we'll be thrown
+   ; RPC_E_CANTCALLOUT_ININPUTSYNCCALL if we try. So all we can do is record
+   ; that we need to make the call later, which we'll do from un.onGUIEnd.
+-  StrCpy $ShouldOpenSurvey "1"
++  ; 【2026-09-16 修】默认不打开：Kokoa 没有卸载问卷，
++  ; 打开一个无效 URL 只会让用户看到 Edge 报错。
++  StrCpy $ShouldOpenSurvey "0"
+ FunctionEnd
+ 
+ ; This function is used to uninstall the maintenance service if the
+@@ -516,6 +522,7 @@ Section "Uninstall"
    ${un.RegCleanFileHandler}  ".svg"   "FirefoxHTML-$AppUserModelID"
    ${un.RegCleanFileHandler}  ".webp"  "FirefoxHTML-$AppUserModelID"
    ${un.RegCleanFileHandler}  ".avif"  "FirefoxHTML-$AppUserModelID"
@@ -25,12 +34,3 @@ index becbb0f70c84eb7f2d9bff5a3aedcbb7a78a61cf..a23a8a1b160932368377fc841b501df9
  
    ${un.RegCleanFileHandler}  ".pdf"   "FirefoxPDF-$AppUserModelID"
  
-
-@@ -219,4 +219,6 @@ Function un.UninstallSurvey
-   ; RPC_E_CANTCALLOUT_ININPUTSYNCCALL if we try. So all we can do is record
-   ; that we need to make the call later, which we will do from un.onGUIEnd.
--  StrCpy $ShouldOpenSurvey "1"
-+  ; 【2026-09-16 修】默认不打开：Kokoa 没有卸载问卷，
-+  ; 打开一个无效 URL 只会让用户看到 Edge 报错。
-+  StrCpy $ShouldOpenSurvey "0"
- FunctionEnd

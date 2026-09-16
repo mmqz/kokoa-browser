@@ -1,5 +1,5 @@
 diff --git a/browser/components/preferences/preferences.js b/browser/components/preferences/preferences.js
-index 94612d8e28af58fcb04914440348b899a0a1e08f..da3b1ffd09745d09589283356d1001dbfb76a468 100644
+index 7cf2c316af8b07111705afc206e061d38911b36b..ed201cea3a32b19ca5b384640870bea74ba8d683 100644
 --- a/browser/components/preferences/preferences.js
 +++ b/browser/components/preferences/preferences.js
 @@ -132,6 +132,7 @@ ChromeUtils.defineLazyGetter(this, "gSubDialog", function () {
@@ -10,7 +10,18 @@ index 94612d8e28af58fcb04914440348b899a0a1e08f..da3b1ffd09745d09589283356d1001db
        ],
        resizeCallback: async ({ title, frame }) => {
          // Search within main document and highlight matched keyword.
-@@ -471,6 +472,8 @@ const CONFIG_PANES = Object.freeze({
+@@ -465,12 +466,18 @@ const CONFIG_PANES = Object.freeze({
+     iconSrc: "chrome://browser/skin/preferences/mozilla-16.svg",
+     groupIds: ["moreFromMozillaPromo", "moreFromMozillaProducts"],
+     module: "chrome://browser/content/preferences/config/moreFromMozilla.mjs",
+-    visible: () => NimbusFeatures.moreFromMozilla.getVariable("enabled"),
++    // 【2026-09-16 隐藏】用户要求不要应用内的品牌元素。
++    //   这是设置里的「更多来自 Mozilla」（推广 Firefox 移动版），
++    //   Kokoa 没有移动版，那个面板对我们无意义。
++    //   原来由 Nimbus（远程实验）控制，本地 pref 关不掉 -> 直接返回 false。
++    visible: () => false,
+     replaces: "moreFromMozilla",
+   },
    tabsBrowsing: {
      l10nId: "tabs-browsing-section",
      groupIds: [
@@ -19,7 +30,7 @@ index 94612d8e28af58fcb04914440348b899a0a1e08f..da3b1ffd09745d09589283356d1001db
        "browserLayout",
        "tabs",
        "pageNavigation",
-@@ -518,7 +521,12 @@ function register_module(categoryName, categoryObject) {
+@@ -518,7 +525,12 @@ function register_module(categoryName, categoryObject) {
        }
        this._initted = true;
        let template = document.getElementById("template-" + categoryName);
@@ -33,7 +44,7 @@ index 94612d8e28af58fcb04914440348b899a0a1e08f..da3b1ffd09745d09589283356d1001db
          // Replace the template element with the nodes inside of it.
          template.replaceWith(template.content);
  
-@@ -562,6 +565,11 @@ function init_all() {
+@@ -562,6 +574,11 @@ function init_all() {
    register_module("paneHome", gHomePane);
    register_module("paneSearch", gSearchPane);
    register_module("panePrivacy", gPrivacyPane);
@@ -45,18 +56,3 @@ index 94612d8e28af58fcb04914440348b899a0a1e08f..da3b1ffd09745d09589283356d1001db
  
    // Restore the cached Firefox Labs nav button visibility so it shows
    // immediately when recipes are expected to be available, before
-
-@@ -461,8 +461,12 @@
-   moreFromMozilla: {
-     l10nId: "more-from-moz-page-header",
-     iconSrc: "chrome://browser/skin/preferences/mozilla-16.svg",
-     groupIds: ["moreFromMozillaPromo", "moreFromMozillaProducts"],
-     module: "chrome://browser/content/preferences/config/moreFromMozilla.mjs",
--    visible: () => NimbusFeatures.moreFromMozilla.getVariable("enabled"),
-+    // 【2026-09-16 隐藏】用户要求不要应用内的品牌元素。
-+    //   这是设置里的「更多来自 Mozilla」（推广 Firefox 移动版），
-+    //   Kokoa 没有移动版，那个面板对我们无意义。
-+    //   原来由 Nimbus（远程实验）控制，本地 pref 关不掉 -> 直接返回 false。
-+    visible: () => false,
-     replaces: "moreFromMozilla",
-   },
